@@ -1,8 +1,7 @@
 # CLH MAX: Post-Quantum Cryptosystem
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22883946.svg)](https://doi.org/10.5281/zenodo.22883946)
 [![Lean 4 Verification](https://img.shields.io/badge/Lean_4-Verified-green.svg)](https://leanprover.github.io/)
 [![arXiv](https://img.shields.io/badge/arXiv-PENDING-b31b1b.svg)](https://arxiv.org/)
-[![DOI](https://img.shields.io/badge/DOI-PENDING-blue.svg)](https://zenodo.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **CLH MAX** is a quantum-resistant Key Encapsulation Mechanism (KEM) based on the pure Ring Learning With Errors (Ring-LWE) problem. This repository contains the formal mathematical verification of the decryption correctness utilizing the Lean 4 proof assistant.
