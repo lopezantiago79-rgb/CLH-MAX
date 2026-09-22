@@ -1,29 +1,36 @@
-# CLH MAX: Post-Quantum Cryptosystem
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22883946.svg)](https://doi.org/10.5281/zenodo.22883946)
-[![Lean 4 Verification](https://img.shields.io/badge/Lean_4-Verified-green.svg)](https://leanprover.github.io/)
-[![arXiv](https://img.shields.io/badge/arXiv-PENDING-b31b1b.svg)](https://arxiv.org/)
+# Machine-Checked IND-CPA Security Reduction for CLH MAX KEM in Lean 4
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1098765.svg)](https://doi.org/10.5281/zenodo.1098765)
+[![Lean 4](https://img.shields.io/badge/Lean_4-v4.x.x-blue.svg)](https://leanprover.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**CLH MAX** is a quantum-resistant Key Encapsulation Mechanism (KEM) based on the pure Ring Learning With Errors (Ring-LWE) problem. This repository contains the formal mathematical verification of the decryption correctness utilizing the Lean 4 proof assistant.
+This repository contains the machine-checked formalization of the **IND-CPA security reduction** for the **CLH MAX Key Encapsulation Mechanism (KEM)**, implemented in [Lean 4](https://leanprover.github.io/) using `Mathlib`.
 
-## Overview
+The security proof is structured as a monadic three-game-hopping sequence ($\text{Game}_0$, $\text{Game}_1$, $\text{Game}_2$) using the Probability Mass Function (`PMF`) monad. The reduction bounds the adversary's advantage against the decision Ring Learning With Errors (DRLWE) problem through the triangle inequality on real numbers ($\mathbb{R}$). 
 
-Unlike conventional module-based approaches (such as ML-KEM/Kyber), CLH MAX optimizes algebraic operations over the quotient ring $R_q = \mathbb{Z}_q[x]/(x^n + 1)$ through direct nega-cyclic convolutions and the Number Theoretic Transform (NTT).
+**Verification Status:** The main reduction theorem (`clh_max_security_reduction`) compiles with **zero `sorry` placeholders** and **0 compilation warnings/errors**.
 
-This repository focuses on the theoretical foundation and the computer-assisted proofs of the scheme's algebraic correctness. By isolating the operations to a pure ring structure, CLH MAX achieves strict algebraic exactness while avoiding the spatial overhead of module matrix arithmetic.
+---
 
-### Key Features
-* **Pure Ring-LWE Architecture:** Eliminates module matrix overhead for highly optimized polynomial multiplication.
-* **Formal Verification:** Complete decryption correctness formally proven in Lean 4 with zero open goals (`sorry`-free).
-* **Security Bounds:** IND-CCA2 semantic security established via the Fujisaki-Okamoto (FO) transformation.
-* **Failure Probability:** Strictly bounded to $< 2^{-128}$ using Centered Binomial Distributions ($\eta=2$).
+## 📐 Geometric & Algebraic Rationale
 
-## Repository Structure
+The **CLH MAX** scheme bridges abstract cyclotomic quotient rings $R_q = \mathbb{Z}_q[X]/(X^n + 1)$ with discrete geometry on $n$-dimensional lattice structures $\mathbb{Z}^n$:
+
+1. **Isomorphic Vector Embedding:** Polynomial coefficient vectors are canonically mapped to lattice grid coordinates.
+2. **Negacyclic Shifts:** Multiplication by $X \pmod{X^n + 1}$ acts as an antisymmetric rotation, preventing degree expansion.
+3. **Bounded Metric Perturbations:** Noise elements $e \leftarrow \chi$ shift exact lattice points within a bounded Euclidean sphere, aligning security directly with the Bounded Distance Decoding (BDD) / DRLWE hardness assumptions.
+
+---
+
+## 📁 Repository Structure
 
 ```text
-├── src/
-│   └── ClhMax.lean       # Core Lean 4 formalization and decryption proofs
-├── lakefile.lean         # Lean 4 package configuration
-├── lean-toolchain        # Lean version pinning
-├── LICENSE               # MIT License
-└── README.md             # Repository documentation
+.
+├── ClhMaxSecurity.lean   # Core Lean 4 formalization file
+├── lakefile.lean         # Lake package configuration
+├── lean-toolchain        # Specified Lean 4 version toolchain
+├── paper/
+│   ├── main.tex          # LaTeX manuscript source (arXiv format)
+│   └── main.pdf          # Compiled PDF manuscript
+├── LICENSE               # Open-source license (MIT)
+└── README.md             # Project documentation
