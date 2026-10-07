@@ -1,3 +1,13 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- Copyright (C) 2026 Santiago López Heinzen
+--
+-- This file is part of CLH MAX KEM.
+-- Licensed under the GNU Affero General Public License v3.0 or later.
+-- See LICENSE in the repository root for the full license text.
+-- <https://www.gnu.org/licenses/agpl-3.0.html>
+--
+-- Deposited on Zenodo: https://doi.org/10.5281/zenodo.22943292
+
 /-!
 # CLH MAX KEM — IND-CPA Security Reduction in Lean 4 / Mathlib
 
