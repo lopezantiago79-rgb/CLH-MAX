@@ -3,7 +3,7 @@
 **A Post-Quantum Key Encapsulation Mechanism over Z_q[X]/Φ₂₅₇(X) with Machine-Checked Security**
 
 > Santiago López Heinzen — October 2026  
-> Zenodo: <https://doi.org/10.5281/zenodo.22943292>
+> Zenodo: <https://doi.org/10.5281/zenodo.22883946>
 
 [![License: AGPL v3](https://img.shields.io/badge/Code-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![License: CC BY 4.0](https://img.shields.io/badge/Paper-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
@@ -179,7 +179,7 @@ Key and ciphertext sizes are **identical to ML-KEM** at each security level.
                   with Machine-Checked Security},
   year         = {2026},
   doi          = {10.5281/zenodo.22943292},
-  url          = {https://doi.org/10.5281/zenodo.22943292},
+  url          = {https://doi.org/10.5281/zenodo.22883946},
   note         = {Lean 4 formalization: 1 axiom, 0 sorry.
                   Code: AGPL-3.0. Paper: CC BY 4.0.}
 }
