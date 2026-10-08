@@ -5,6 +5,9 @@
 > Santiago López Heinzen — October 2026  
 > Zenodo: <https://doi.org/10.5281/zenodo.22943292>
 
+[![License: AGPL v3](https://img.shields.io/badge/Code-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: CC BY 4.0](https://img.shields.io/badge/Paper-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
 ---
 
 ## Overview
@@ -30,7 +33,7 @@ the attack surface exploited by subfield attacks (Cheon et al. 2016).
 | Property | CLH MAX | ML-KEM (Kyber) |
 |---|---|---|
 | Ring modulus | Φ₂₅₇(X) — **irreducible** | X²⁵⁶+1 — splits into 256 factors |
-| Ring structure | Field F_{q²⁵⁶} (single) | Product of 256 copies of F_q |
+| Ring structure | Single field F_{q²⁵⁶} | Product of 256 copies of F_q |
 | qO_K factorisation | **1 prime ideal** (inert) | 256 prime ideals (split) |
 | Subfield attacks | **Do not apply ✓** | Applicable ✗ |
 | Security Level 1 (cl/qu) | **2¹³².⁸ / 2¹²¹** | 2¹¹⁸ / 2¹⁰⁷ |
@@ -45,8 +48,7 @@ the attack surface exploited by subfield attacks (Cheon et al. 2016).
 
 ## Concrete Security (Lattice-Estimator, Albrecht et al.)
 
-All values computed with the official lattice-estimator on the Module-CLH MAX
-parameter sets (q = 3329, η = 2):
+All values computed with the official lattice-estimator (q = 3329, η = 2):
 
 | Scheme | BKW | uSVP | BDD | Dual | Dual Hybrid | **Worst** | β | NIST |
 |---|---|---|---|---|---|---|---|---|
@@ -68,18 +70,19 @@ Theorem 4.10 establishes the reduction chain with explicit constants:
 ideal-SIVP_γ(O_K)  →  D-RLWE_{256, 3329, ψ₂}(Z_3329[X]/Φ₂₅₇(X))
 ```
 
-with approximation factor:
+with explicit approximation factor:
 
 ```
 γ = √2 · n · (q/B) = √2 · 256 · (3329/2) ≈ 602,613 ≈ 2^19.2
 ```
 
 Five conditions explicitly verified (C1)–(C5):
-- C1: n = 256 = 2⁸ (Peikert 2009 smoothness hypothesis)
-- C2: k = 257 prime
-- C3: ord₂₅₇(3329) = 256 → qO_K is a prime ideal
-- C4: q = 3329 ≥ 2√n·B = 64 (LPR 2013, Theorem 4.1)
-- C5: α = 2/3329 ≤ 1/(√2·n) (noise rate within valid range)
+
+- **C1:** n = 256 = 2⁸ (Peikert 2009 smoothness hypothesis)
+- **C2:** k = 257 prime
+- **C3:** ord₂₅₇(3329) = 256 → qO_K is a prime ideal
+- **C4:** q = 3329 ≥ 2√n·B = 64 (LPR 2013, Theorem 4.1)
+- **C5:** α = 2/3329 ≤ 1/(√2·n) (noise rate within valid range)
 
 ---
 
@@ -89,8 +92,6 @@ Five conditions explicitly verified (C1)–(C5):
 **Namespace:** `ClhMax`  
 **Axiom count: 1** (`drlwe_hardness`)  
 **Sorry count: 0**
-
-### Proof architecture
 
 | Component | Type | Status |
 |---|---|---|
@@ -108,14 +109,6 @@ Five conditions explicitly verified (C1)–(C5):
 | `Adv_INDCPA_eq_game_diff` | lemma | ✓ proved |
 | `clh_max_indcpa_security` | **theorem** | ✓ **0 sorry** |
 | `clh_max_indcpa_zero` | corollary | ✓ **0 sorry** |
-
-**Main theorem (5.9):**
-
-```lean
-theorem clh_max_indcpa_security (A : Adversary Rq) :
-    Adv_INDCPA U χ A ≤
-    Adv_DRLWE U χ (B1 χ A) + Adv_DRLWE U χ (B2 U χ A)
-```
 
 ---
 
@@ -136,7 +129,7 @@ cd clh-max-kem
 # Install elan (Lean version manager) if needed
 curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
 
-# Download Mathlib cache (recommended — avoids compiling Mathlib from scratch)
+# Download Mathlib cache (avoids compiling Mathlib from scratch)
 lake exe cache get
 
 # Build
@@ -154,9 +147,11 @@ Expected output: no errors, no warnings about `sorry`.
 
 ```
 clh-max-kem/
-├── ClhMaxSecurity.lean   # Complete Lean 4 formalization
+├── ClhMaxSecurity.lean   # Complete Lean 4 formalization (AGPL-3.0)
 ├── lakefile.lean         # Lake build configuration
 ├── lean-toolchain        # Lean version pin
+├── LICENSE               # AGPL-3.0 (code)
+├── LICENSE-paper.md      # CC BY 4.0 (manuscript)
 └── README.md             # This file
 ```
 
@@ -185,7 +180,8 @@ Key and ciphertext sizes are **identical to ML-KEM** at each security level.
   year         = {2026},
   doi          = {10.5281/zenodo.22943292},
   url          = {https://doi.org/10.5281/zenodo.22943292},
-  note         = {Lean 4 formalization: 1 axiom, 0 sorry}
+  note         = {Lean 4 formalization: 1 axiom, 0 sorry.
+                  Code: AGPL-3.0. Paper: CC BY 4.0.}
 }
 ```
 
@@ -193,4 +189,15 @@ Key and ciphertext sizes are **identical to ML-KEM** at each security level.
 
 ## License
 
-MIT License — see `LICENSE` for details.
+This repository uses **two separate licenses**:
+
+| Component | Files | License |
+|---|---|---|
+| Lean 4 code | `ClhMaxSecurity.lean`, `lakefile.lean` | **AGPL-3.0** |
+| Academic manuscript | `main.tex`, `main_es.tex`, PDF | **CC BY 4.0** |
+
+The AGPL-3.0 license ensures that any modification to the cryptographic
+code — including use in network services — must be published as open source,
+allowing the community to audit any variant of the scheme.
+
+Full license texts: `LICENSE` (code) and `LICENSE-paper.md` (manuscript).
