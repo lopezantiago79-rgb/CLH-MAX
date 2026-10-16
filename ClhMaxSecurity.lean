@@ -8,263 +8,237 @@
 --
 -- Deposited on Zenodo: https://doi.org/10.5281/zenodo.22943292
 
-/-!
-# CLH MAX KEM — IND-CPA Security Reduction in Lean 4 / Mathlib
+/-
+  CLH-MAX: game-hopping reduction for IND-CPA (Ring-LWE form, one module component, k = 1).
 
-This file contains the complete machine-checked proof of IND-CPA security
-for the CLH MAX Key Encapsulation Mechanism over the ring
-  R_q = Z_q[X]/Φ₂₅₇(X) ≅ F_{q^256}
-where Φ₂₅₇ is irreducible over Z_q (verified: ord₂₅₇(q) = 256 for q = 3329).
+  What this file proves:  for ANY ring R, ANY distributions `unif`, `noise` on R (U is only
+  assumed translation-invariant, which holds for every constant distribution, in particular
+  the uniform one, see the last section) and ANY adversary A:
 
-## Summary
-- **Axiom count : 1** (`drlwe_hardness` — the sole computational assumption)
-- **Sorry count : 0**
-- **Components  : 16** (definitions, lemmas, theorems, corollary)
+      advIND ≤ (eps1 true + eps2 true) + (eps1 false + eps2 false)
 
-## Reference
-Santiago López Heinzen.
-"CLH MAX: A Post-Quantum KEM over Z_q[X]/Φ₂₅₇(X) with Machine-Checked Security."
-Zenodo: https://doi.org/10.5281/zenodo.22943292
+  where eps1 / eps2 are the advantages of two explicit distinguishers B1 / B2 against
+  (Ring-)LWE with 1 resp. 2 samples.  This is the left-or-right form; the bit-guessing form
+  of the paper's Theorem follows from it by the usual argument.
 
-## Structure
-- §1 Games and advantages (Definitions 5.1, 5.2)
-- §2 Sole computational axiom (Axiom 5.3 — drlwe_hardness)
-- §3 Field uniformity theorem (Theorem 5.4 — proved, not assumed)
-- §4 Simulator B₁ — pk hop (Lemma 5.5)
-- §5 Simulator B₂ — ciphertext hop (Lemma 5.6)
-- §6 Game chain (Lemma 5.7, Corollary 5.8)
-- §7 Main theorem and corollary (Theorem 5.9, Corollary 5.10)
+  What it does NOT do:
+    * it does not assume or use any hardness axiom (the old `drlwe_hardness` is gone);
+    * it does not formalise hardness of (M)LWE nor running times of B1, B2;
+    * it treats k = 1 (a single ring element as secret); the module case k > 1 is analogous
+      but is not formalised here.
+
+  Sampling order: the challenger samples the encryption randomness (r, e1, e2) BEFORE the
+  adversary's `choose` step. This is equivalent (it does not depend on `choose`) and avoids
+  commuting binds in hop 1/2.
+
+  Check after compiling:   #print axioms ClhMax.clh_max_indcpa
+  Expected: only `propext`, `Classical.choice`, `Quot.sound`.
 -/
-import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Probability.ProbabilityMassFunction.Monad
-import Mathlib.Data.Real.Basic
-import Mathlib.Algebra.Field.Basic
-
-open PMF
+import Mathlib
 
 namespace ClhMax
 
-/-! ## Variables
+noncomputable section
 
-We work over an abstract type `Rq` carrying a `Field` instance.
-The field hypothesis is justified by `Φ₂₅₇` being irreducible over `Z_q`,
-which makes `R_q = Z_q[X]/Φ₂₅₇(X) ≅ F_{q^256}` a finite field.
--/
+variable {R σ : Type} [CommRing R]
 
-variable {Rq : Type} [Field Rq] [Fintype Rq] [DecidableEq Rq]
+/-- Probability that a Bool-valued experiment outputs `true`. -/
+def pr (p : PMF Bool) : ℝ := (p true).toReal
 
-/-- `U` : uniform distribution over `R_q ≅ F_{q^256}` -/
-/-- `χ` : centered binomial error distribution ψ_η -/
-variable (U χ : PMF Rq)
+/-- Advantage of distinguishing the experiments `real.bind D` and `rand.bind D`. -/
+def advDist {S : Type} (real rand : PMF S) (D : S → PMF Bool) : ℝ :=
+  |pr (real.bind D) - pr (rand.bind D)|
 
-/-! ## §1 — Games and Advantages -/
+/-- Adversary with state `σ`: `choose` gets the public key `(a, t)` and returns two
+messages and a state; `guess` gets the state and the ciphertext `(c1, c2)`. -/
+structure Adversary (R σ : Type) where
+  choose : R × R → PMF (R × R × σ)
+  guess : σ → R × R → PMF Bool
 
-/-- An IND-CPA adversary against CLH MAX. -/
-structure Adversary (Rq : Type) where
-  choose : Rq × Rq → PMF (Rq × Rq)
-  guess  : Rq × Rq → Rq × Rq → Rq × Rq → PMF Bool
+/-- The message selected by the challenge bit. -/
+def msg {R σ : Type} (b : Bool) (x : R × R × σ) : R := if b then x.2.1 else x.1
 
-/-- **Game₀(A, b)**: the real CLH MAX IND-CPA game.
-The public key is a genuine RLWE sample `(a, a·s+e)`. -/
-noncomputable def Game0 (A : Adversary Rq) (b : Bool) : PMF Bool := do
-  let a ← U; let s ← χ; let e ← χ
-  let (m0, m1) ← A.choose (a, a * s + e)
-  let r ← χ; let e1 ← χ; let e2 ← χ
-  A.guess (a, a * s + e) (m0, m1)
-          (a * r + e1, (a * s + e) * r + e2 + if b then m1 else m0)
+/-! ### Sample distributions for the two hops -/
 
-/-- **Game₁(A, b)**: pk replaced by a uniform pair `(a, u₀)`. -/
-noncomputable def Game1 (A : Adversary Rq) (b : Bool) : PMF Bool := do
-  let a ← U; let u0 ← U
-  let (m0, m1) ← A.choose (a, u0)
-  let r ← χ; let e1 ← χ; let e2 ← χ
-  A.guess (a, u0) (m0, m1)
-          (a * r + e1, u0 * r + e2 + if b then m1 else m0)
+/-- Hop 1, real: `(a, a*s + e)`. -/
+def S1real (unif noise : PMF R) : PMF (R × R) :=
+  unif.bind fun a => noise.bind fun s => noise.bind fun e => PMF.pure (a, a * s + e)
 
-/-- **Game₂(A)**: ciphertext is fully uniform, independent of the challenge bit. -/
-noncomputable def Game2 (A : Adversary Rq) : PMF Bool := do
-  let a ← U; let u0 ← U
-  let (m0, m1) ← A.choose (a, u0)
-  let u1 ← U; let u2 ← U
-  A.guess (a, u0) (m0, m1) (u1, u2)
+/-- Hop 1, random: `(a, u)`. -/
+def S1rand (unif : PMF R) : PMF (R × R) :=
+  unif.bind fun a => unif.bind fun u => PMF.pure (a, u)
 
-/-- IND-CPA advantage of adversary `A` (Definition 5.2). -/
-noncomputable def Adv_INDCPA (A : Adversary Rq) : ℝ :=
-  |(Game0 U χ A true).toFun true - (Game0 U χ A false).toFun true|
+/-- Hop 2, real: `((a, t), (a*r + e1, t*r + e2))` (two LWE samples with secret `r`). -/
+def S2real (unif noise : PMF R) : PMF ((R × R) × (R × R)) :=
+  unif.bind fun a => unif.bind fun t =>
+    noise.bind fun r => noise.bind fun e1 => noise.bind fun e2 =>
+      PMF.pure ((a, t), (a * r + e1, t * r + e2))
 
-/-- A D-RLWE distinguisher. -/
-structure Dist_DRLWE (Rq : Type) where
-  run : Rq × Rq → PMF Bool
+/-- Hop 2, random: `((a, t), (w1, w2))` with `w1, w2` uniform. -/
+def S2rand (unif : PMF R) : PMF ((R × R) × (R × R)) :=
+  unif.bind fun a => unif.bind fun t => unif.bind fun w1 => unif.bind fun w2 =>
+    PMF.pure ((a, t), (w1, w2))
 
-/-- D-RLWE advantage of distinguisher `D` (Definition 5.2). -/
-noncomputable def Adv_DRLWE (D : Dist_DRLWE Rq) : ℝ :=
-  |(do let a ← U; let s ← χ; let e ← χ; D.run (a, a * s + e)).toFun true
-  - (do let a ← U; let u ← U;            D.run (a, u)         ).toFun true|
+/-! ### Distinguishers (simulators) -/
 
-/-! ## §2 — Sole Computational Axiom (Axiom 5.3)
+/-- B1 receives a public key `pk = (a, t)` and plays the encryption game with it. -/
+def B1 (noise : PMF R) (A : Adversary R σ) (b : Bool) (pk : R × R) : PMF Bool :=
+  noise.bind fun r => noise.bind fun e1 => noise.bind fun e2 =>
+    (A.choose pk).bind fun x =>
+      A.guess x.2.2 (pk.1 * r + e1, pk.2 * r + e2 + msg b x)
 
-This is the **unique** non-proved declaration in the formalization.
-It asserts D-RLWE hardness over `R_q = Z_q[X]/Φ₂₅₇(X)`.
-Every formal cryptographic proof requires exactly one such axiom;
-hardness cannot be proved within the formal system.
--/
+/-- B2 receives `((a, t), (w1, w2))`; it uses `(a, t)` as public key and answers the
+challenge with `(w1, w2 + m_b)`. -/
+def B2 (A : Adversary R σ) (b : Bool) (p : (R × R) × (R × R)) : PMF Bool :=
+  (A.choose p.1).bind fun x => A.guess x.2.2 (p.2.1, p.2.2 + msg b x)
 
-/-- **Axiom 5.3 (D-RLWE Hardness).**
-The distributions `(a, a·s+e)` and `(a, u)` are computationally
-indistinguishable over `R_q`. -/
-axiom drlwe_hardness (D : Dist_DRLWE Rq) :
-    (do let a ← U; let s ← χ; let e ← χ; D.run (a, a * s + e)).toFun true
-  = (do let a ← U; let u ← U;             D.run (a, u)         ).toFun true
+/-! ### Games -/
 
-/-- Immediate corollary: the D-RLWE advantage of any distinguisher is zero. -/
-lemma Adv_DRLWE_eq_zero (D : Dist_DRLWE Rq) : Adv_DRLWE U χ D = 0 := by
-  simp [Adv_DRLWE, drlwe_hardness]
+/-- Game 0: the real IND-CPA game with challenge bit `b`. -/
+def G0 (unif noise : PMF R) (A : Adversary R σ) (b : Bool) : PMF Bool :=
+  (S1real unif noise).bind (B1 noise A b)
 
-/-! ## §3 — Field Uniformity Theorem (Theorem 5.4)
+/-- Game 1: public key `t` replaced by a uniform element. -/
+def G1 (unif noise : PMF R) (A : Adversary R σ) (b : Bool) : PMF Bool :=
+  (S1rand unif).bind (B1 noise A b)
 
-This theorem is **proved**, not assumed.
-It uses the `[Field Rq]` instance, which is justified by `Φ₂₅₇`
-being irreducible modulo `q`.
--/
+/-- Game 2: ciphertext replaced by uniform elements. -/
+def G2 (unif : PMF R) (A : Adversary R σ) (b : Bool) : PMF Bool :=
+  (S2rand unif).bind (B2 A b)
 
-/-- **Theorem 5.4 (Field Uniformity).**
-Multiplication by any element `a ∈ R_q` preserves the uniform distribution.
-Proof uses `Field.mul_left_cancel₀` and `Finset.sum_eq_single`. -/
-theorem mul_uniform_eq (a : Rq) :
-    (do let u ← U; pure (a * u) : PMF Rq) = U := by
-  ext v
-  simp only [PMF.bind_apply, PMF.pure_apply]
-  by_cases ha : a = 0
-  · subst ha; simp
-  · rw [Finset.sum_eq_single (a⁻¹ * v)]
-    · simp [mul_inv_cancel_left₀ ha]
-    · intro u _ hne
-      simp only [ite_eq_right_iff, one_ne_zero, imp_false]
-      intro heq; exact hne (by rw [← heq]; field_simp)
-    · intro hv; exact absurd (Finset.mem_univ _) hv
+def advIND (unif noise : PMF R) (A : Adversary R σ) : ℝ :=
+  |pr (G0 unif noise A true) - pr (G0 unif noise A false)|
 
-/-! ## §4 — Simulator B₁ — pk hop (Lemma 5.5) -/
+def eps1 (unif noise : PMF R) (A : Adversary R σ) (b : Bool) : ℝ :=
+  advDist (S1real unif noise) (S1rand unif) (B1 noise A b)
 
-/-- Simulator B₁: on input (a, b), runs the adversary with pk = (a, b)
-and a structured ciphertext. Used to bridge Game₀ ↔ Game₁. -/
-noncomputable def B1 (A : Adversary Rq) : Dist_DRLWE Rq where
-  run := fun (a, b) => do
-    let (m0, m1) ← A.choose (a, b)
-    let r ← χ; let e1 ← χ; let e2 ← χ
-    A.guess (a, b) (m0, m1) (a * r + e1, b * r + e2 + m1)
+def eps2 (unif noise : PMF R) (A : Adversary R σ) (b : Bool) : ℝ :=
+  advDist (S2real unif noise) (S2rand unif) (B2 A b)
 
-lemma B1_real_eq_Game0 (A : Adversary Rq) :
-    (do let a ← U; let s ← χ; let e ← χ; (B1 χ A).run (a, a * s + e))
-    = Game0 U χ A true := by
-  simp only [B1, Game0]; ext x
-  simp only [PMF.bind_apply]
-  congr 1; ext a; congr 1; ext s; congr 1; ext e
-  simp [PMF.bind_apply]
+/-! ### Lemmas -/
 
-lemma B1_unif_eq_Game1 (A : Adversary Rq) :
-    (do let a ← U; let u ← U; (B1 χ A).run (a, u))
-    = Game1 U χ A true := by
-  simp only [B1, Game1]; ext x
-  simp only [PMF.bind_apply]
-  congr 1; ext a; congr 1; ext u
-  simp [PMF.bind_apply]
+/-- Game 1 is exactly "B2 on real LWE samples" (this is where the algebra of the ciphertext
+`c1 = a*r + e1`, `c2 = t*r + e2 + m` matches the LWE sample `B*r + e` with `B = (a; t)`). -/
+theorem G1_eq_S2real (unif noise : PMF R) (A : Adversary R σ) (b : Bool) :
+    G1 unif noise A b = (S2real unif noise).bind (B2 A b) := by
+  simp only [G1, S1rand, S2real, B1, B2, PMF.bind_bind, PMF.pure_bind]
 
-/-- **Lemma 5.5**: Adv_DRLWE(B₁(A)) = |Pr[Game₀(A,1)=1] − Pr[Game₁(A,1)=1]| -/
-lemma Adv_B1_eq (A : Adversary Rq) :
-    Adv_DRLWE U χ (B1 χ A) =
-    |(Game0 U χ A true).toFun true - (Game1 U χ A true).toFun true| := by
-  simp only [Adv_DRLWE]
+/-- Translation invariance of `unif` lets us shift inside a `bind`. -/
+theorem shift_bind {β : Type} (unif : PMF R)
+    (hU : ∀ m : R, unif.bind (fun w => PMF.pure (w + m)) = unif)
+    (g : R → PMF β) (m : R) :
+    unif.bind (fun w => g (w + m)) = unif.bind g := by
+  calc unif.bind (fun w => g (w + m))
+      = unif.bind (fun w => (PMF.pure (w + m)).bind g) := by simp [PMF.pure_bind]
+    _ = (unif.bind (fun w => PMF.pure (w + m))).bind g := by rw [PMF.bind_bind]
+    _ = unif.bind g := by rw [hU m]
+
+/-- One-time-pad step: shifting the sampled `w` by something that depends on a later-sampled
+`x` does not change the experiment. -/
+theorem indep_of_shift {X β : Type} (unif : PMF R)
+    (hU : ∀ m : R, unif.bind (fun w => PMF.pure (w + m)) = unif)
+    (C : PMF X) (g : X → R → PMF β) (ms : X → R) :
+    unif.bind (fun w => C.bind fun x => g x (w + ms x))
+      = unif.bind (fun w => C.bind fun x => g x w) := by
+  calc unif.bind (fun w => C.bind fun x => g x (w + ms x))
+      = C.bind (fun x => unif.bind fun w => g x (w + ms x)) :=
+        PMF.bind_comm unif C (fun w x => g x (w + ms x))
+    _ = C.bind (fun x => unif.bind fun w => g x w) := by
+        congr 1
+        funext x
+        exact shift_bind unif hU (g x) (ms x)
+    _ = unif.bind (fun w => C.bind fun x => g x w) :=
+        (PMF.bind_comm unif C (fun w x => g x w)).symm
+
+/-- Game 2 does not depend on the message: it equals an experiment where `w2` is not shifted. -/
+theorem G2_eq_unshifted (unif : PMF R)
+    (hU : ∀ m : R, unif.bind (fun w => PMF.pure (w + m)) = unif)
+    (A : Adversary R σ) (b : Bool) :
+    G2 unif A b =
+      unif.bind fun a => unif.bind fun t => unif.bind fun w1 => unif.bind fun w2 =>
+        (A.choose (a, t)).bind fun x => A.guess x.2.2 (w1, w2) := by
+  simp only [G2, S2rand, B2, PMF.bind_bind, PMF.pure_bind]
   congr 1
-  · exact congr_arg (·.toFun true) (B1_real_eq_Game0 U χ A)
-  · exact congr_arg (·.toFun true) (B1_unif_eq_Game1 U χ A)
+  funext a
+  congr 1
+  funext t
+  congr 1
+  funext w1
+  exact indep_of_shift unif hU (A.choose (a, t)) (fun x w => A.guess x.2.2 (w1, w)) (msg b)
 
-/-! ## §5 — Simulator B₂ — ciphertext hop (Lemma 5.6) -/
+theorem G2_indep (unif : PMF R)
+    (hU : ∀ m : R, unif.bind (fun w => PMF.pure (w + m)) = unif)
+    (A : Adversary R σ) :
+    G2 unif A true = G2 unif A false := by
+  rw [G2_eq_unshifted unif hU A true, G2_eq_unshifted unif hU A false]
 
-/-- Simulator B₂: on input (a, b), uses (a, b) as the ciphertext component
-and samples an independent pk. Used to bridge Game₁ ↔ Game₂. -/
-noncomputable def B2 (A : Adversary Rq) : Dist_DRLWE Rq where
-  run := fun (a, b) => do
-    let a2 ← U; let u0 ← U
-    let (m0, m1) ← A.choose (a2, u0)
-    let e2 ← χ
-    A.guess (a2, u0) (m0, m1) (b, a * b + e2 + m1)
+/-! ### Main theorem -/
 
-lemma B2_real_eq_Game1 (A : Adversary Rq) :
-    (do let a ← U; let s ← χ; let e ← χ; (B2 U χ A).run (a, a * s + e)).toFun true
-    = (Game1 U χ A true).toFun true :=
-  drlwe_hardness (U := U) (χ := χ) { run := fun (a, b) => do
-    let a2 ← U; let u0 ← U
-    let (m0, m1) ← A.choose (a2, u0); let e2 ← χ
-    A.guess (a2, u0) (m0, m1) (b, a * b + e2 + m1) }
+theorem clh_max_indcpa (unif noise : PMF R)
+    (hU : ∀ m : R, unif.bind (fun w => PMF.pure (w + m)) = unif)
+    (A : Adversary R σ) :
+    advIND unif noise A ≤
+      (eps1 unif noise A true + eps2 unif noise A true) +
+      (eps1 unif noise A false + eps2 unif noise A false) := by
+  have h1 : ∀ b, eps1 unif noise A b
+      = |pr (G0 unif noise A b) - pr (G1 unif noise A b)| := fun b => rfl
+  have h2 : ∀ b, eps2 unif noise A b
+      = |pr (G1 unif noise A b) - pr (G2 unif A b)| := by
+    intro b
+    unfold eps2 advDist
+    rw [G1_eq_S2real unif noise A b]
+    rfl
+  have e : pr (G2 unif A true) = pr (G2 unif A false) := by
+    rw [G2_indep unif hU A]
+  have t1 : |pr (G0 unif noise A true) - pr (G2 unif A true)|
+      ≤ |pr (G0 unif noise A true) - pr (G1 unif noise A true)|
+        + |pr (G1 unif noise A true) - pr (G2 unif A true)| := abs_sub_le _ _ _
+  have t0 : |pr (G0 unif noise A false) - pr (G2 unif A false)|
+      ≤ |pr (G0 unif noise A false) - pr (G1 unif noise A false)|
+        + |pr (G1 unif noise A false) - pr (G2 unif A false)| := abs_sub_le _ _ _
+  have t2 : |pr (G0 unif noise A true) - pr (G0 unif noise A false)|
+      ≤ |pr (G0 unif noise A true) - pr (G2 unif A true)|
+        + |pr (G2 unif A true) - pr (G0 unif noise A false)| := abs_sub_le _ _ _
+  have t3 : |pr (G2 unif A true) - pr (G0 unif noise A false)|
+      = |pr (G0 unif noise A false) - pr (G2 unif A false)| := by
+    rw [e, abs_sub_comm]
+  unfold advIND
+  rw [h1 true, h1 false, h2 true, h2 false]
+  linarith
 
-lemma B2_unif_eq_Game2 (A : Adversary Rq) :
-    (do let a ← U; let u ← U; (B2 U χ A).run (a, u)).toFun true
-    = (Game2 U A).toFun true := by
-  simp only [B2, Game2, PMF.bind_apply]
-  congr 1; ext a; congr 1; ext u
-  simp [PMF.bind_apply, mul_uniform_eq U a]
+/-! ### A constant (e.g. uniform) distribution is translation invariant -/
 
-/-- **Lemma 5.6**: Adv_DRLWE(B₂(A)) = |Pr[Game₁(A,1)=1] − Pr[Game₂(A)=1]| -/
-lemma Adv_B2_eq (A : Adversary Rq) :
-    Adv_DRLWE U χ (B2 U χ A) =
-    |(Game1 U χ A true).toFun true - (Game2 U A).toFun true| :=
-  congr_arg₂ (fun x y => |x - y|)
-    (B2_real_eq_Game1 U χ A) (B2_unif_eq_Game2 U χ A)
+/-- On a finite additive group the uniform distribution is constant (`unif a = unif b`);
+every constant PMF is invariant under translations. This avoids depending on a particular
+Mathlib constructor of the uniform distribution (which has been renamed/deprecated). -/
+theorem shift_invariant_of_const {S : Type} [AddCommGroup S] (unif : PMF S)
+    (hc : ∀ a b, unif a = unif b) (m : S) :
+    unif.bind (fun w => PMF.pure (w + m)) = unif := by
+  ext x
+  rw [PMF.bind_apply]
+  simp only [PMF.pure_apply]
+  rw [tsum_eq_single (x - m)]
+  · have hx : x = x - m + m := by simp
+    simp [hc (x - m) x]
+  · intro w hw
+    have hx : x ≠ w + m := by
+      intro h
+      apply hw
+      rw [h]
+      simp
+    simp [hx]
 
-/-! ## §6 — Game Chain (Lemma 5.7, Corollary 5.8) -/
+/-- The theorem for any distribution `unif` that is constant, in particular the uniform
+distribution on a finite ring. -/
+theorem clh_max_indcpa_uniform (unif noise : PMF R) (hc : ∀ a b, unif a = unif b)
+    (A : Adversary R σ) :
+    advIND unif noise A ≤
+      (eps1 unif noise A true + eps2 unif noise A true) +
+      (eps1 unif noise A false + eps2 unif noise A false) :=
+  clh_max_indcpa unif noise (fun m => shift_invariant_of_const unif hc m) A
 
-/-- **Lemma 5.7 (Game Chain).**
-Under D-RLWE hardness: Pr[Game₀(A,0)=1] = Pr[Game₂(A)=1].
-Uses `drlwe_hardness` twice. -/
-lemma Game0_false_eq_Game2 (A : Adversary Rq) :
-    (Game0 U χ A false).toFun true = (Game2 U A).toFun true := by
-  have h1 : (Game0 U χ A false).toFun true
-          = (Game1 U χ A false).toFun true :=
-    drlwe_hardness (U := U) (χ := χ) { run := fun (a, b) => do
-      let (m0, m1) ← A.choose (a, b)
-      let r ← χ; let e1 ← χ; let e2 ← χ
-      A.guess (a, b) (m0, m1) (a * r + e1, b * r + e2 + m0) }
-  have h2 : (Game1 U χ A false).toFun true
-          = (Game2 U A).toFun true :=
-    drlwe_hardness (U := U) (χ := χ) { run := fun (a, b) => do
-      let a2 ← U; let u0 ← U
-      let (m0, m1) ← A.choose (a2, u0); let e2 ← χ
-      A.guess (a2, u0) (m0, m1) (b, a * b + e2 + m0) }
-  rw [h1, h2]
+end
 
-/-- **Corollary 5.8.** -/
-lemma Adv_INDCPA_eq_game_diff (A : Adversary Rq) :
-    Adv_INDCPA U χ A =
-    |(Game0 U χ A true).toFun true - (Game2 U A).toFun true| := by
-  simp only [Adv_INDCPA]
-  rw [Game0_false_eq_Game2]
-
-/-! ## §7 — Main Theorem and Corollary (Theorem 5.9, Corollary 5.10) -/
-
-/-- **Theorem 5.9 (IND-CPA Security of CLH MAX).**
-
-  Adv_INDCPA(A) ≤ Adv_DRLWE(B₁(A)) + Adv_DRLWE(B₂(A))
-
-Proof: triangle inequality on |·| over ℝ (`abs_sub_le` in Mathlib),
-applied to the game chain established by Lemmas 5.5–5.7.
-
-**Axiom count: 1** (`drlwe_hardness`).
-**Sorry count: 0**. -/
-theorem clh_max_indcpa_security (A : Adversary Rq) :
-    Adv_INDCPA U χ A ≤
-    Adv_DRLWE U χ (B1 χ A) + Adv_DRLWE U χ (B2 U χ A) := by
-  rw [Adv_INDCPA_eq_game_diff, Adv_B1_eq, Adv_B2_eq]
-  exact abs_sub_le
-    ((Game0 U χ A true).toFun true)
-    ((Game1 U χ A true).toFun true)
-    ((Game2 U A).toFun true)
-
-/-- **Corollary 5.10.**
-Under D-RLWE hardness (Axiom 5.3), Adv_INDCPA(A) = 0 for all A. -/
-corollary clh_max_indcpa_zero (A : Adversary Rq) :
-    Adv_INDCPA U χ A = 0 := by
-  have h := clh_max_indcpa_security U χ A
-  rw [Adv_DRLWE_eq_zero, Adv_DRLWE_eq_zero] at h
-  linarith [abs_nonneg (Adv_INDCPA U χ A)]
+#print axioms ClhMax.clh_max_indcpa
 
 end ClhMax
