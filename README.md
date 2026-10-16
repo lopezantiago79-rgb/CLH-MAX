@@ -58,4 +58,15 @@ consequences of the field structure of the ring.
 
 ## License
 
-See `LICENSE` (code) and `LICENSE-paper.md` (paper).
+This repository is dual-licensed:
+
+- **Code** (Lean files, scripts): GNU Affero General Public License v3.0 (AGPL-3.0).
+  See [`LICENSE`](LICENSE).
+- **Paper** (`main.tex` and the PDF): Creative Commons Attribution 4.0 International
+  (CC BY 4.0). See [`LICENSE-paper.md`](LICENSE-paper.md).
+
+## How to cite
+
+Santiago López Heinzen, *CLH-MAX: A Lattice-Based KEM Proposal over the Prime Cyclotomic
+Ring Z_q[X]/Φ_257(X)*, 2026. Zenodo: https://doi.org/10.5281/zenodo.22943292
+(the DOI will be updated to the version 2 record).
