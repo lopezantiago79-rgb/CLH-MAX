@@ -1,1012 +1,254 @@
-\documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{geometry}
-\usepackage{booktabs}
-\usepackage{tabularx}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{listings}
-\usepackage{xcolor}
-
-\geometry{margin=1in}
-
-% ── Colores para listings ──────────────────────────────────────
-\definecolor{codebg}{RGB}{248,248,248}
-\definecolor{codecomment}{RGB}{100,100,100}
-\definecolor{codekeyword}{RGB}{0,0,180}
-\definecolor{codestring}{RGB}{160,0,0}
-
-\lstset{
-  backgroundcolor=\color{codebg},
-  basicstyle=\ttfamily\footnotesize,
-  breaklines=true,
-  breakatwhitespace=false,
-  commentstyle=\color{codecomment}\itshape,
-  keywordstyle=\color{codekeyword}\bfseries,
-  stringstyle=\color{codestring},
-  frame=single,
-  rulecolor=\color{gray!40},
-  xleftmargin=10pt,
-  xrightmargin=5pt,
-  aboveskip=8pt,
-  belowskip=8pt,
-  tabsize=2,
-  showstringspaces=false,
-  keepspaces=true,
-  columns=flexible,
-}
-
-% ── Teoremas ───────────────────────────────────────────────────
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{lemma}[theorem]{Lemma}
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm,booktabs,hyperref,enumitem,verbatim}
+\newtheorem{theorem}{Theorem}
 \newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{definition}[theorem]{Definition}
-\newtheorem{axiom}[theorem]{Axiom}
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
-
-% ── Macros ─────────────────────────────────────────────────────
-\newcommand{\OK}{\mathcal{O}_K}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\F}{\mathbb{F}}
 \newcommand{\Rq}{R_q}
-\newcommand{\Zq}{\mathbb{Z}_q}
-\newcommand{\Fq}{\mathbb{F}_q}
-\newcommand{\Phi}{\Phi_{257}}
-
-\title{CLH MAX: A Post-Quantum Key Encapsulation Mechanism\\
-over $\mathbb{Z}_{q}[X]/\Phi_{257}(X)$ with Machine-Checked Security}
-\author{Santiago L\'opez Heinzen}
-\date{September 29, 2026}
-
+\title{CLH-MAX: A Lattice-Based KEM Proposal over the\\ Prime Cyclotomic Ring $\Z_q[X]/\Phi_{257}(X)$}
+\author{Santiago L\'opez Heinzen\\
+Independent researcher\\
+\texttt{lopezantiago79@gmail.com}}
+\date{October 2026}
 \begin{document}
-
 \maketitle
-
 \begin{abstract}
-We present CLH MAX, a post-quantum Key Encapsulation Mechanism (KEM)
-whose central algebraic novelty is the use of the Fermat prime cyclotomic
-polynomial $\Phi_{257}(X)$ as the ring modulus.
-For primes $q$ with $\mathrm{ord}_{257}(q)=256$ ---
-including $q=3329$ and $q=12289$ ---
-$\Phi_{257}$ is irreducible over $\mathbb{Z}_{q}$, making
-$R_{q}=\mathbb{Z}_{q}[X]/\Phi_{257}(X)\cong \mathbb{F}_{q^{256}}$
-a single field extension.
-This eliminates the subfield structure exploited in attacks against
-power-of-two cyclotomic KEMs such as Kyber/ML-KEM,
-where $X^{256}+1$ splits completely into 256 linear factors.
-Geometrically, the lattice points satisfying
-$\Phi_{257}(x)\equiv 0\pmod{q}$ exist only in $\mathbb{F}_{q^{256}}$,
-not in any proper subfield, giving the ring maximal algebraic rigidity.
-We provide:
-(i) a formal worst-case hardness foundation via the
-ideal-SIVP $\to$ D-RLWE reduction chain
-(Peikert 2009, Lyubashevsky--Peikert--Regev 2013);
-(ii) a machine-checked IND-CPA reduction in Lean~4 with exactly one
-computational axiom and zero \emph{sorry} placeholders;
-(iii) concrete security analysis via the lattice-estimator showing
-Module-CLH MAX exceeds ML-KEM by 14--15 bits at every NIST level,
-with inapplicability of subfield attacks;
-(iv) constant-time arithmetic primitives (Barrett, Montgomery,
-\texttt{ct\_select}); and
-(v) a full IND-CCA2 KEM construction via the Fujisaki--Okamoto transform.
-Concrete parameter sets are specified for NIST security levels 1, 3, and 5,
-with Decryption Failure Probability $\delta<2^{-128}$ across all levels.
+We propose CLH-MAX, a Module-LWE-based key encapsulation mechanism (KEM) in the style of Kyber/ML-KEM in which the ring $\Z_q[X]/(X^{256}+1)$ is replaced by $\Rq=\Z_q[X]/\Phi_{257}(X)$, the ring of the prime cyclotomic field $\mathbb{Q}(\zeta_{257})$. For $q=3329$ the polynomial $\Phi_{257}$ is irreducible modulo $q$, so $\Rq\cong\F_{q^{256}}$ is a field. We specify the CPA-secure public-key encryption layer, its Fujisaki--Okamoto transform to an IND-CCA2 KEM (random-oracle model), and three parameter sets of module rank $2,3,4$. We give a game-hopping proof that IND-CPA security reduces to the decision Module-LWE problem over $\Rq$, an exact analysis of the decryption failure probability (which corrects the na\"ive coefficient-variance count for this ring), lattice-estimator outputs for the generic MLWE instances underlying the parameter sets (identical to those of ML-KEM-768/1024 for $k=3,4$, as expected, and about $7$ bits lower for $k=2$ when $\eta=2$ is used), and a discussion of arithmetic cost, where the absence of a negacyclic NTT is the main disadvantage. We make no claim of higher concrete security than ML-KEM; the contribution is a fully specified alternative ring instantiation together with its correctness and reduction analysis, reproducible scripts, and a clear list of open problems.
 \end{abstract}
 
-%─────────────────────────────────────────────────────────────────
 \section{Introduction}
-%─────────────────────────────────────────────────────────────────
+ML-KEM (FIPS~203 \cite{FIPS203}) is based on Module-LWE over $\Z_{3329}[X]/(X^{256}+1)$, a power-of-two cyclotomic ring chosen because it admits a fast (incomplete) number-theoretic transform (NTT). The choice of ring in structured-lattice cryptography is a design parameter that is not fully explored: other cyclotomic rings have been proposed, e.g.\ prime-conductor rings in the ring-LWE literature and in NTRU Prime. This note studies one concrete alternative, conductor $257$ (the Fermat prime $F_3=2^8+1$), for which the ring degree is $\varphi(257)=256$, equal to that of ML-KEM, so module ranks, key sizes and noise parameters can be compared directly.
 
-Lattice-based cryptography provides the most mature post-quantum security
-candidates, with the NIST standards ML-KEM (Kyber), ML-DSA (Dilithium),
-and SLH-DSA (SPHINCS+) relying on the hardness of Ring Learning With Errors
-(RLWE) and related problems~\cite{NIST2024}.
-All NIST-standardised schemes use ring moduli of the form
-$X^{n}+1=\Phi_{2n}(X)$ because this choice enables efficient Number Theoretic
-Transform (NTT) multiplication and admits well-studied worst-case reductions.
-However, $X^{n}+1$ splits completely into $n$ linear factors modulo~$q$
-(since $q\equiv 1\pmod{2n}$), exposing a subfield decomposition that underlies
-known structural attacks.
+\paragraph{Contributions.}
+(1) A complete specification of CLH-MAX: PKE, FO-based KEM, three parameter sets (Sections~\ref{sec:ring}--\ref{sec:scheme}). (2) A proof that IND-CPA security reduces to two decision-MLWE instances over $\Rq$, with the explicit simulators (Section~\ref{sec:sec}, Appendix~\ref{app:sim}). (3) An exact computation of the decryption failure probability including the ring-specific coefficient count for $\Phi_{257}$; it shows that the highest parameter set does \emph{not} reach $2^{-128}$ without modification (Section~\ref{sec:dfp}, Appendices~\ref{app:count},\ref{app:script}). (4) A cost analysis of multiplication in $\Rq$ (Section~\ref{sec:arith}).
 
-CLH MAX proposes a different choice: $k=257$ (the Fermat prime
-$F_{3}=2^{8}+1$), with the cyclotomic polynomial
-$\Phi_{257}(X)=X^{256}+X^{255}+\dots+X+1$ as modulus.
-For $q=3329$ or $q=12289$, $\Phi_{257}$ is irreducible over $\mathbb{Z}_{q}$,
-so $R_{q}\cong \mathbb{F}_{q^{256}}$ is a single field ---
-the smallest possible algebraic object of that dimension.
+\paragraph{Non-claims.} We do not claim that CLH-MAX is more secure than ML-KEM, that known attacks on ML-KEM fail to apply to a field ring, or that worst-case reductions give concrete security at these parameters. Section~\ref{sec:sec} explains why.
 
-\medskip\noindent This paper makes the following contributions:
-\begin{enumerate}
-\item \textbf{Geometric motivation:} the cyclotomic lattice points of order 257
-      exist only in the full extension $\mathbb{F}_{q^{256}}$, not in any
-      $\mathbb{Z}_{q}$-subspace, making subfield attacks inapplicable.
-\item \textbf{Hardness foundation (Theorem~\ref{thm:hardness}):}
-      the reduction chain
-      ideal-SIVP $\to$ ideal-BDD $\to$ D-RLWE applies to $k=257$
-      with explicit approximation factor $\gamma\approx 602{,}613\approx 2^{19.2}$.
-\item \textbf{Machine-checked IND-CPA proof (Theorem~\ref{thm:indcpa}):}
-      complete Lean~4 formalization with 16 components, 1 axiom, 0~\emph{sorry}.
-\item \textbf{Concrete security (Section~\ref{sec:security}):}
-      Module-CLH MAX exceeds ML-KEM by $14{.}8$, $13{.}4$, and $15{.}3$ bits
-      at NIST Levels~1, 3, and~5, respectively.
-\item \textbf{Full KEM construction:} constant-time implementation and
-      IND-CCA2 security via the Fujisaki--Okamoto transform.
-\end{enumerate}
+\paragraph{Related work.} Ring-LWE over general cyclotomic rings was introduced in \cite{LPR13}, including the worst-case reduction for arbitrary cyclotomic fields. Kyber \cite{BDKLLSSS18} and ML-KEM use module structure over $\Z_q[X]/(X^{256}+1)$; the module variant over $\Z_q[X]/\Phi_{257}$ studied here follows the same template. Subfield and structural attacks are discussed in \cite{ABD16,CJL16,CDPR16,CDW17}.
 
-%─────────────────────────────────────────────────────────────────
-\section{Algebraic Setting and Geometric Motivation}
-%─────────────────────────────────────────────────────────────────
+\section{Preliminaries}
+\paragraph{Notation.} $N=256$, $q$ prime, $\Rq=\Z_q[X]/\Phi_{257}(X)$ with $\Phi_{257}=X^{256}+\dots+X+1$. Elements are identified with coefficient vectors in $\Z_q^{256}$. For $k\ge1$, vectors and matrices over $\Rq$ are written with the module rank $k$ as dimension. $\psi_\eta$ is the centered binomial distribution on $\Z$: $\sum_{i=1}^{\eta}(a_i-b_i)$ with $a_i,b_i\leftarrow\{0,1\}$ uniform; it has variance $\eta/2$. For $\eta=2$ the variance is $1$ (we use $\eta=2$ throughout, so $\sigma^2=1$). $\chi$ denotes $\psi_2$ applied coefficient-wise.
 
-\subsection{The Fermat Cyclotomic Ring}
-
-Let $k=257$, the third Fermat prime $F_{3}=2^{8}+1$.
-The 257th cyclotomic polynomial is
-\[
-\Phi_{257}(X)=X^{256}+X^{255}+\dots+X+1=\frac{X^{257}-1}{X-1},
-\]
-with degree $\phi(257)=256$ and all coefficients equal to~1.
-Let $q$ be a prime with $\mathrm{ord}_{257}(q)=256$.
-Then $\Phi_{257}$ is irreducible over $\mathbb{Z}_{q}$ (since the splitting
-field has degree $\mathrm{ord}_{257}(q)=256=\deg\Phi_{257}$), and
-\[
-R_{q}=\mathbb{Z}_{q}[X]/\Phi_{257}(X)\cong \mathbb{F}_{q^{256}}
-\]
-is a finite field of order $q^{256}$.
-Both $q=3329$ and $q=12289$ satisfy this condition
-(verified: $\mathrm{ord}_{257}(3329)=\mathrm{ord}_{257}(12289)=256$).
-Every non-zero element of $R_{q}$ is invertible, so left-multiplication by
-any non-zero $a$ is a bijection --- a property proved as a theorem in the
-Lean~4 formalization.
-
-\subsection{Geometric Motivation: Cyclotomic Lattice Points}
-
-Any polynomial $p(X)=\sum c_{i}X^{i}\in R_{q}$ maps to its coefficient
-vector $(c_{0},\dots,c_{255})\in \mathbb{Z}_{q}^{256}$, identifying ring
-elements with lattice points.
-The equation $\Phi_{k}(x)\equiv 0\pmod{q}$ selects a subset of these points
---- the \emph{cyclotomic lattice points of order~$k$} --- whose algebraic
-structure depends critically on the factorization of $\Phi_{k}$
-over $\mathbb{Z}_{q}$.
-
-\begin{itemize}
-\item \textbf{Kyber} ($k=512$, $X^{256}+1$):
-      $q\equiv 1\pmod{512}$ $\Rightarrow$ $\Phi_{512}$ splits into 256 linear
-      factors. The 256 cyclotomic points live in $\mathbb{Z}_{q}$ itself.
-      This enables the NTT but creates 256 sub-ideals that structural attacks
-      can exploit.
-\item \textbf{CLH MAX} ($k=257$, $\Phi_{257}$):
-      $\mathrm{ord}_{257}(q)=256$ $\Rightarrow$ $\Phi_{257}$ is irreducible.
-      The cyclotomic points exist only in $\mathbb{F}_{q^{256}}$, not in any
-      proper subfield.
-      The ideal $q\mathcal{O}_{K}$ is a single prime ideal in $\mathcal{O}_{K}$.
-      There are no subfactors to exploit.
-\end{itemize}
-
-The secret $s\in R_{q}$ deforms the ring geometry via the RLWE instance
-$(a,\,a\cdot s+e)$, and the error $e\leftarrow\chi$ adds a bounded
-perturbation.
-Security follows from the hardness of recovering $s$ from this noisy
-observation over the field $\mathbb{F}_{q^{256}}$.
-
-\subsection{Why $k=257$ is the Optimal Choice}
-
-Among all cyclotomic orders giving $n=256$, $k=257$ is optimal because:
-\begin{enumerate}
-\item $\phi(257)=256=2^{8}$: same dimension as Kyber Level~1, enabling fair
-      comparison.
-\item All coefficients of $\Phi_{257}$ are 0 or 1: inexpensive ring arithmetic.
-\item Irreducibility at standard moduli: $q=3329$ and $q=12289$ both work.
-\item 257 is prime: the worst-case hardness framework of Peikert--Rosen (2007)
-      applies with the strongest available guarantees.
-\item $\phi(257)=2^{8}$: the power-of-2 degree satisfies the hypothesis of
-      Lyubashevsky--Peikert--Regev (2013) for the BDD $\to$ RLWE
-      reduction step.
-\end{enumerate}
-
-%─────────────────────────────────────────────────────────────────
-\section{Scheme Specification}
-%─────────────────────────────────────────────────────────────────
-
-CLH MAX operates over $R_{q}=\mathbb{Z}_{q}[X]/\Phi_{257}(X)$ with $q$ prime
-satisfying $\mathrm{ord}_{257}(q)=256$.
-The error distribution is $\chi=\psi_{\eta}$, a centered binomial distribution
-with parameter $\eta$ and variance $\sigma^{2}=\eta/2$.
-
-\subsection{PKE Layer (IND-CPA)}
-
-\begin{itemize}
-\item \textbf{KeyGen():} Sample $a\leftarrow U(R_{q})$, $s,e\leftarrow\chi$.
-      Set $\mathit{pk}=(a,\;b=a\cdot s+e)$, $\mathit{sk}=s$.
-\item \textbf{Encaps($\mathit{pk}$, $m$):} Sample $r,e_{1},e_{2}\leftarrow\chi$.
-      Compute
-      $c_{1}=a\cdot r+e_{1}$,\;
-      $c_{2}=b\cdot r+e_{2}+m$.
-      Output $(c_{1},c_{2})$.
-\item \textbf{Decaps($\mathit{sk}$, $c$):} Compute
-      $m'=c_{2}-c_{1}\cdot s$.
-      Return $\mathrm{round}(2m'/q)\in\{0,1\}^{256}$.
-\end{itemize}
-
-The decapsulation identity is
-$c_{2}-c_{1}\cdot s = m + E(X)$,
-where $E(X)=e\cdot r+e_{2}-e_{1}\cdot s$ is the error polynomial.
-
-\subsection{Full KEM (IND-CCA2) via Fujisaki--Okamoto}
-
-The FO-T transform of Hofheinz--H\"ovelmanns--Kiltz (2017) converts the
-PKE layer to an IND-CCA2 KEM.
-The prerequisite $\delta<2^{-128}$ is satisfied (see Section~\ref{sec:dfp}).
-The construction uses two hash functions $H$ and $G$ modeled as random oracles:
-
-\begin{lstlisting}[language={}]
-KeyGen-CCA2():
-  pk_seed <- {0,1}^256;  (pk, sk_pke) <- KeyGen(pk_seed)
-  z <- {0,1}^256                      -- implicit rejection key
-  sk = (sk_pke, pk, H(pk), z)
-
-Encaps-CCA2(pk):
-  m <- {0,1}^256
-  (K, r) <- G(m || H(pk))            -- deterministic randomness
-  c <- Encaps(pk, m; r)              -- PKE with fixed r
-  return (c,  H(K || c))             -- 256-bit shared key
-
-Decaps-CCA2(sk, c):
-  m' <- Decaps(sk_pke, c)
-  (K', r') <- G(m' || H(pk))
-  c' <- Encaps(pk, m'; r')           -- re-encrypt
-  if ct_equal(c, c'):                -- constant-time compare
-      return H(K' || c)             -- accept
-  else:
-      return H(z || c)              -- implicit rejection (CT)
-\end{lstlisting}
-
-\noindent\textbf{Security:} CLH MAX-CCA2 is IND-CCA2 in the ROM under
-D-RLWE hardness over $R_{q}$.
-The implicit rejection ensures constant-time \texttt{Decaps} regardless
-of ciphertext validity.
-
-%─────────────────────────────────────────────────────────────────
-\section{Worst-Case Hardness Foundation}
-%─────────────────────────────────────────────────────────────────
-
-We establish the worst-case hardness foundation for D-RLWE over
-$R_{q}=\mathbb{Z}_{q}[X]/\Phi_{257}(X)$ via a chain of formal reductions
-from well-studied lattice problems.
-
-\subsection{Notation and Definitions}
-
-\begin{definition}[Cyclotomic number field]\label{def:field}
-Let $k=257$ and let $\zeta_{257}$ denote a primitive 257th root of unity.
-The 257th cyclotomic field is $K=\mathbb{Q}(\zeta_{257})$, with ring of
-integers $\mathcal{O}_{K}=\mathbb{Z}[\zeta_{257}]$.
-The ring $\mathcal{O}_{K}$ is a free $\mathbb{Z}$-module of rank
-$\phi(257)=256$, with integral basis
-$\{1,\zeta_{257},\dots,\zeta_{257}^{255}\}$.
+\begin{definition}[Decision MLWE]
+Let $n,m\ge1$. $\mathrm{MLWE}_{n,m,\chi}$ asks to distinguish $(B,Bs+e)$ from $(B,w)$, where $B\leftarrow U(\Rq^{m\times n})$, $s\leftarrow\chi^n$, $e\leftarrow\chi^m$, $w\leftarrow U(\Rq^m)$. $\mathrm{Adv}^{\mathrm{MLWE}}_{n,m,\chi}(\mathcal D)$ is $|\Pr[\mathcal D(B,Bs+e)=1]-\Pr[\mathcal D(B,w)=1]|$.
 \end{definition}
 
-\begin{definition}[Ideal lattices]
-An \emph{ideal lattice} of $\mathcal{O}_{K}$ is a full-rank sublattice of
-$\mathbb{R}^{256}$ arising from a nonzero ideal $I\subseteq\mathcal{O}_{K}$
-via the canonical embedding $\sigma:K\to\mathbb{R}^{256}$.
-The minimum distance of $\sigma(I)$ is denoted $\lambda_{1}(I)$.
+\begin{definition}[PKE, IND-CPA]
+A PKE is $(\mathsf{KeyGen},\mathsf{Enc},\mathsf{Dec})$. In the IND-CPA game the challenger samples $(pk,sk)$ and a bit $b$; the adversary picks $m_0,m_1$ of equal length, receives $\mathsf{Enc}(pk,m_b)$ and outputs $b'$. The advantage is $|\Pr[b'=b]-\tfrac12|$.
 \end{definition}
 
-\begin{definition}[ideal-SIVP$_{\gamma}$]
-Given a basis of an ideal lattice $\sigma(I)$, find $n=256$ linearly
-independent vectors of length at most $\gamma\cdot\lambda_{n}(I)$, where
-$\lambda_{n}$ is the $n$-th successive minimum.
+\begin{definition}[KEM, IND-CCA2]
+A KEM is $(\mathsf{KeyGen},\mathsf{Encaps},\mathsf{Decaps})$, with $\mathsf{Encaps}(pk)\to(c,K)$. In the IND-CCA2 game the adversary receives $(c^*,K_b)$ with $K_0$ the real key and $K_1$ uniform, and may query $\mathsf{Decaps}$ on any $c\neq c^*$; advantage $|\Pr[b'=b]-\tfrac12|$.
 \end{definition}
 
-\begin{definition}[ideal-BDD]
-Given a basis of $\sigma(I)$ and a target $t\in\mathbb{R}^{256}$ with
-$\mathrm{dist}(t,\sigma(I))\le d<\lambda_{1}(I)/2$, find the closest
-lattice point to $t$.
-\end{definition}
-
-\begin{definition}[D-RLWE$_{n,q,\chi}$]
-Distinguish the distribution
-$\{(a,\,a\cdot s+e):a\leftarrow U(R_{q}),\;s,e\leftarrow\chi\}$
-from $U(R_{q})\times U(R_{q})$, where $R_{q}=\mathcal{O}_{K}/q\mathcal{O}_{K}$.
-\end{definition}
-
-\subsection{Key Algebraic Proposition}
-
-\begin{proposition}[Factorisation of $q\mathcal{O}_{K}$ for $k=257$, $q=3329$]
-\label{prop:factorisation}
-\begin{itemize}
-\item[(i)] $q\mathcal{O}_{K}$ is a prime ideal of $\mathcal{O}_{K}$.
-\item[(ii)] $\mathcal{O}_{K}/q\mathcal{O}_{K}\cong
-      \mathbb{Z}_{q}[X]/\Phi_{257}(X)\cong\mathbb{F}_{q^{256}}$.
-\end{itemize}
+\section{The ring}\label{sec:ring}
+\begin{proposition}\label{prop:irr}
+Let $q\ne257$ be prime. Then $\Phi_{257}$ is irreducible over $\F_q$ if and only if $\mathrm{ord}_{257}(q)=256$, i.e.\ $q$ is a primitive root modulo $257$. In that case $\Rq\cong\F_{q^{256}}$ and $q\mathcal{O}_K$ is a prime ideal of $\mathcal{O}_K=\Z[\zeta_{257}]$.
 \end{proposition}
-
 \begin{proof}
-A prime $p$ is inert in $\mathbb{Z}[\zeta_{k}]$ if and only if
-$\mathrm{ord}_{k}(p)=\phi(k)$.
-For $k=257$, $\phi(257)=256$.
-Computationally: $\mathrm{ord}_{257}(3329)=256\checkmark$.
-Therefore $q\mathcal{O}_{K}$ is prime, and the quotient is the field
-$\mathbb{F}_{q^{256}}$.
+For $\gcd(q,m)=1$ all irreducible factors of $\Phi_m$ over $\F_q$ have degree $\mathrm{ord}_m(q)$; here $\deg\Phi_{257}=\varphi(257)=256$. The statement about $q\mathcal O_K$ is the standard description of inert primes in cyclotomic fields.
 \end{proof}
+Direct computation gives $\mathrm{ord}_{257}(3329)=\mathrm{ord}_{257}(12289)=256$ ($3329\equiv245$ and $12289\equiv210 \pmod{257}$). Among primes $3000<q<20000$ there are $922$ moduli with this property (e.g.\ $3001,3019,3037,3041,\dots$). Not every NTT-friendly prime works: $\mathrm{ord}_{257}(7681)=128$, so $\Phi_{257}$ splits into two factors of degree $128$ modulo $7681$. We use $q=3329$, the ML-KEM modulus.
 
-\begin{remark}[Contrast with Kyber]
-For Kyber ($k=512$, $q=12289$), $\mathrm{ord}_{512}(12289)=1$, so
-$q\mathcal{O}_{K}$ splits completely into 256 prime ideals of degree~1.
-This split enables the negacyclic NTT but exposes 256 independent subfactors.
-Proposition~\ref{prop:factorisation} shows CLH MAX avoids this split entirely.
+\begin{remark}[Comparison with ML-KEM]
+For $q=3329$ one has $q\equiv 1 \pmod{256}$ but $q\not\equiv 1\pmod{512}$ ($3329\bmod 512=257$, $\mathrm{ord}_{512}(3329)=2$). Hence $X^{256}+1$ factors modulo $3329$ into $128$ \emph{quadratic} factors, not $256$ linear ones; this is why ML-KEM uses an incomplete, 7-layer NTT. $q=12289$, which splits $X^{256}+1$ completely, is not an ML-KEM modulus.
 \end{remark}
 
-\subsection{The Reduction Chain}
-
-\begin{proposition}[ideal-SIVP $\to$ ideal-BDD; Peikert 2009, Theorem 3.1]
-\label{prop:sivp-bdd}
-Let $K=\mathbb{Q}(\zeta_{257})$, $n=256$.
-There exists a quantum polynomial-time reduction from
-$\mathrm{ideal\text{-}SIVP}_{\gamma}(\mathcal{O}_{K})$ to
-$\mathrm{ideal\text{-}BDD}_{d}(\mathcal{O}_{K})$.
-For noise rate $\alpha=B/q=2/3329$ and error bound $d=B\cdot\sqrt{n}=32$,
-the reduction holds with
-\[
-\gamma
-  = \frac{\max\!\bigl(\sqrt{n\ln n},\;\sqrt{2}\,n\bigr)}{\alpha}
-  = \sqrt{2}\cdot n\cdot\frac{q}{B}
-  = \sqrt{2}\cdot 256\cdot\frac{3329}{2}
-  \approx 602{,}613.
-\]
-For $n=256$: $\max(\sqrt{256\cdot 5.545},\sqrt{2}\cdot 256)=\max(37.64,362.04)=362.04$,
-so the second term dominates and
-$\gamma=362.04\,/\,(2/3329)=602{,}613$.
-\end{proposition}
-
-\begin{proposition}[ideal-BDD $\to$ D-RLWE; LPR 2013, Theorem 4.1]
-\label{prop:bdd-rlwe}
-Let $n=256$, $q=3329$, $B=2$, $d=B\cdot\sqrt{n}=32$.
-The following two conditions are explicitly verified:
-\begin{align*}
-\text{(C4)}\quad &q=3329\ge 2\sqrt{n}\cdot B=64.\quad\checkmark\\
-\text{(C5)}\quad &\alpha=\tfrac{2}{3329}\approx 6.0\times 10^{-4}
-  \le \tfrac{1}{\sqrt{2}\,n}=\tfrac{1}{362}\approx 2.76\times 10^{-3}.\quad\checkmark
-\end{align*}
-Under \emph{(C4)} and \emph{(C5)}, there exists a polynomial-time reduction
-from $\mathrm{ideal\text{-}BDD}_{d}(\mathcal{O}_{K})$ to
-$\mathrm{D\text{-}RLWE}_{256,3329,\psi_{2}}(R_{q})$.
-Since $q\mathcal{O}_{K}$ is a single prime ideal (Proposition~\ref{prop:factorisation}),
-Lemma~2.12 of~\cite{LPR13} applies with a single embedding ---
-strictly simpler than the 256-embedding required for Kyber.
-\end{proposition}
-
-\begin{theorem}[Worst-case hardness of CLH MAX D-RLWE]
-\label{thm:hardness}
-Let $k=257$, $K=\mathbb{Q}(\zeta_{257})$, $\mathcal{O}_{K}=\mathbb{Z}[\zeta_{257}]$,
-$n=256$, $q=3329$, $B=2$, $\chi=\psi_{2}$.
-There exists a quantum polynomial-time reduction
-\[
-\mathrm{ideal\text{-}SIVP}_{\gamma}(\mathcal{O}_{K})
-\;\longrightarrow\;
-\mathrm{D\text{-}RLWE}_{256,3329,\psi_{2}}
-   \!\bigl(\mathbb{Z}_{3329}[X]/\Phi_{257}(X)\bigr)
-\]
-with explicit approximation factor
-\[
-\gamma
-  = \sqrt{2}\cdot n\cdot\frac{q}{B}
-  = \sqrt{2}\cdot 256\cdot\frac{3329}{2}
-  = \sqrt{2}\cdot 426{,}112
-  \approx 602{,}613
-  \approx 2^{19.2}.
-\]
-The following five conditions are explicitly verified:
-\begin{description}
-\item[(C1)] $n=256=2^{8}$ --- satisfies the smoothness hypothesis of~\cite{Pei09}.
-\item[(C2)] $k=257$ is prime --- $\Phi_{257}$ is the prime cyclotomic polynomial.
-\item[(C3)] $\mathrm{ord}_{257}(3329)=256=\phi(257)$ ---
-            $q\mathcal{O}_{K}$ is a prime ideal (Proposition~\ref{prop:factorisation}).
-\item[(C4)] $q=3329\ge 2\sqrt{n}\cdot B=64$ --- prerequisite of~\cite{LPR13},
-            Theorem~4.1.
-\item[(C5)] $\alpha=2/3329\approx 6.0\times 10^{-4}\le
-            1/(\sqrt{2}\,n)\approx 2.76\times 10^{-3}$.
-\end{description}
-\end{theorem}
-
-\begin{proof}
-Compose Propositions~\ref{prop:sivp-bdd} and~\ref{prop:bdd-rlwe}.
-The polynomial overhead of each step is absorbed into the overall
-quantum polynomial-time bound.
-\end{proof}
-
-\begin{remark}[Comparison with Kyber]
-For Kyber with the same parameters ($n=256$, $q=3329$, $B=2$),
-the same formula gives $\gamma_{\mathrm{Kyber}}=602{,}613$ --- identical
-to CLH MAX.
-The structural difference lies in~(C3): for Kyber,
-$q\mathcal{O}_{K}=\mathfrak{p}_{1}\cdots\mathfrak{p}_{256}$
-requires 256 parallel BDD$\to$RLWE embeddings;
-for CLH MAX, $q\mathcal{O}_{K}$ is prime, requiring only one.
+\begin{remark}[Subfields]\label{rem:sub}
+$\F_{q^{256}}$ is not ``subfield-free'': it contains the subfields $\F_{q^{2^j}}$, $0\le j\le 7$, and $\mathrm{Gal}(\F_{q^{256}}/\F_q)$ is cyclic of order $256$; likewise $\mathbb{Q}(\zeta_{257})$ has a cyclic Galois group of order $256$ and a subfield of every degree $2^j$. What differs from $X^{256}+1$ is only that $\Rq$ does not decompose as a product of smaller rings. Whether this has any security consequence is open.
 \end{remark}
 
-\begin{remark}[Class number]
-The class number $h(\mathbb{Q}(\zeta_{257}))$ satisfies
-$\log_{2}h\approx 356$.
-Theorem~\ref{thm:hardness} is unaffected:
-Propositions~\ref{prop:sivp-bdd} and~\ref{prop:bdd-rlwe} use only the
-factorisation of $q\mathcal{O}_{K}$ as an ideal, not the structure of the
-ideal class group.
+\paragraph{Multiplication.} Let $a,b\in\Rq$ with coefficient vectors of length $256$ (degree $\le255$). Then $ab=\sum_{i=0}^{510}c_iX^i$ over $\Z_q$. Since $\Phi_{257}\mid X^{257}-1$, first fold $p_i=\sum_{j+l\equiv i\ (257)}a_jb_l$ for $0\le i\le256$; then $ab\bmod\Phi_{257}$ has coefficients $p_i-p_{256}$ for $0\le i\le255$ (because $X^{256}\equiv-(X^{255}+\dots+1)$). Hence a ring multiplication is a length-$257$ cyclic convolution followed by $256$ subtractions.
+
+\section{Scheme}\label{sec:scheme}
+Fix $q=3329$, $\eta=2$, module rank $k\in\{2,3,4\}$. Let $\mathrm{Enc}_1(m)=\lceil q/2\rfloor\cdot m$ embed $m\in\{0,1\}^{256}$ coefficient-wise into $\Rq$ and $\mathrm{Dec}_1(x)_i=1$ iff the centered representative of $x_i$ lies in $[\lceil q/4\rceil,\lfloor 3q/4\rfloor]$.
+
+\paragraph{PKE.}
+\begin{itemize}[nosep]
+\item $\mathsf{KeyGen}$: $A\leftarrow U(\Rq^{k\times k})$; $s,e\leftarrow\chi^k$; $t=As+e$. $pk=(A,t)$, $sk=s$.
+\item $\mathsf{Enc}(pk,m;r)$: coins determine $r,e_1\leftarrow\chi^k$, $e_2\leftarrow\chi$; $u=A^{T}r+e_1$; $v=t^{T}r+e_2+\mathrm{Enc}_1(m)$. Output $(u,v)$.
+\item $\mathsf{Dec}(sk,(u,v))$: $m'=\mathrm{Dec}_1(v-s^{T}u)$.
+\end{itemize}
+\textbf{Correctness.} $v-s^{T}u=\mathrm{Enc}_1(m)+E$ with $E=e^{T}r+e_2-s^{T}e_1$; decryption succeeds iff every coefficient of $E$ has centered absolute value $<\lfloor q/4\rfloor$ (up to rounding of $q/2$).
+
+\paragraph{KEM (FO with implicit rejection).} With hash functions $H,G$ modelled as random oracles and following \cite{HHK17}:
+\begin{itemize}[nosep]
+\item $\mathsf{KeyGen}$: $(pk,s)\leftarrow\mathsf{PKE.KeyGen}$, $z\leftarrow\{0,1\}^{256}$; $sk_{\mathrm{KEM}}=(s,pk,H(pk),z)$.
+\item $\mathsf{Encaps}(pk)$: $m\leftarrow\{0,1\}^{256}$; $(\bar K,r)=G(m\,\|\,H(pk))$; $c=\mathsf{Enc}(pk,m;r)$; output $(c,\,K=H(\bar K\,\|\,H(c)))$.
+\item $\mathsf{Decaps}(sk,c)$: $m'=\mathsf{Dec}(s,c)$; $(\bar K',r')=G(m'\|H(pk))$; if $c=\mathsf{Enc}(pk,m';r')$ (constant-time comparison) return $H(\bar K'\|H(c))$, else return $H(z\|H(c))$ (implicit rejection, also in constant time).
+\end{itemize}
+By \cite{HHK17}, IND-CCA2 security of this KEM in the random-oracle model follows from IND-CPA security of the PKE together with a sufficiently small decryption failure probability $\delta$; the explicit bound of \cite{HHK17} should be consulted for the concrete loss in terms of the number of oracle queries. We make no quantum-random-oracle claim.
+
+\paragraph{Sizes (no compression).} With $12$-bit packing: $|pk|=384k+32$ B, $|c|=384(k+1)$ B, $|sk_{\mathrm{KEM}}|=384k+|pk|+64$ B.
+\begin{table}[h]\centering
+\begin{tabular}{lrrrrr}\toprule
+Set & $k$ & $n=256k$ & $|pk|$ & $|c|$ & $|sk_{\mathrm{KEM}}|$\\\midrule
+CLH-MAX-512 & 2 & 512 & 800 & 1152 & 1632\\
+CLH-MAX-768 & 3 & 768 & 1184 & 1536 & 2400\\
+CLH-MAX-1024 & 4 & 1024 & 1568 & 1920 & 3168\\\bottomrule
+\end{tabular}
+\caption{Parameter sets and sizes in bytes; $q=3329$, $\eta=2$, no ciphertext compression.}
+\end{table}
+Ciphertext compression as in ML-KEM is not specified here and would change both $\delta$ and ciphertext size.
+
+\section{Security}\label{sec:sec}
+\begin{theorem}[IND-CPA]\label{thm:cpa}
+For every adversary $\mathcal A$ against the PKE there are distinguishers $\mathcal B_1,\mathcal B_2$ with essentially the running time of $\mathcal A$ such that
+\[
+\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}(\mathcal A)\le \mathrm{Adv}^{\mathrm{MLWE}}_{k,k,\chi}(\mathcal B_1)+\mathrm{Adv}^{\mathrm{MLWE}}_{k+1,k,\chi}(\mathcal B_2).
+\]
+\end{theorem}
+\begin{proof}
+\emph{Game $G_0$} is the real IND-CPA game. \emph{Game $G_1$} is $G_0$ with $t$ replaced by a uniform $t^*\in\Rq^k$. $\mathcal B_1$, given an MLWE challenge $(A,t^*)$ with $k$ samples and secret $s$, runs $\mathcal A$ on $pk=(A,t^*)$, plays the challenger honestly for the rest and outputs $1$ iff $\mathcal A$ wins. If $t^*=As+e$ this is exactly $G_0$, otherwise $G_1$, so $|\Pr[G_0]-\Pr[G_1]|=\mathrm{Adv}^{\mathrm{MLWE}}_{k,k,\chi}(\mathcal B_1)$.
+\emph{Game $G_2$} replaces $(u,v)$ by uniform elements of $\Rq^k\times\Rq$. In $G_1$ the matrix $B=\binom{A^{T}}{t^{T}}\in\Rq^{(k+1)\times k}$ is uniform and
+\[
+\binom{u}{v-\mathrm{Enc}_1(m_b)}=B\,r+\binom{e_1}{e_2}
+\]
+is an MLWE sample with secret $r$ and $k+1$ rows. $\mathcal B_2$, given $(B,w)$, parses $B$ into $A^{T}$ and $t^{T}$, runs $\mathcal A$ on $pk=(A,t)$, and after the challenge messages are chosen returns $\mathcal A$ the ciphertext $(w_{1..k},\,w_{k+1}+\mathrm{Enc}_1(m_b))$. Real samples give $G_1$, uniform ones $G_2$. In $G_2$ the ciphertext is independent of $b$ so $\Pr[G_2]=\tfrac12$. Combining, $\Pr[G_0]-\tfrac12\le\varepsilon_1+\varepsilon_2$.
+\end{proof}
+\begin{remark}[Why no ``axiom'']
+The theorem is a relative statement. It does \emph{not} give $\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}=0$: an unbounded adversary recovers $s$ from $(A,t)$ (the support of $(s,e)$ is far smaller than $q^{256k}$), so no sound assumption can set the MLWE advantage of \emph{all} distinguishers to zero. Security is computational and rests on the hardness of MLWE for efficient adversaries. Any mechanised proof should formalise the inequality of Theorem~\ref{thm:cpa}, not an unconditional-hardness axiom.
 \end{remark}
 
-%─────────────────────────────────────────────────────────────────
-\section{Machine-Checked IND-CPA Security Proof}
-%─────────────────────────────────────────────────────────────────
+\paragraph{Worst-case reductions.} Lyubashevsky--Peikert--Regev \cite{LPR13} give a quantum reduction from approximate worst-case SVP on ideal lattices to RLWE for \emph{any} cyclotomic field, hence including $\mathbb{Q}(\zeta_{257})$, but for discrete Gaussian errors in the canonical embedding with width $\alpha q\ge\omega(\sqrt{\log n})$ and with moduli and approximation factors that are polynomial in $n$ with non-trivial exponents. The parameters used here ($q=3329$, centered binomial $\eta=2$, $n=256$) lie outside that regime, exactly as for ML-KEM, so the reductions provide asymptotic motivation only and no concrete bits of security. Moreover, for prime-power cyclotomic fields (which includes conductor $257$) there are quantum algorithms for ideal-SVP with approximation factors $\exp(\tilde O(\sqrt n))$ in certain settings \cite{CDPR16,CDW17}; these do not break RLWE at the parameters considered, but they caution against reading worst-case statements as guarantees.
 
-\subsection{Security Model}
+\paragraph{Concrete security.} Attacks on (M)LWE (primal uSVP, BDD, dual, hybrid) as implemented in the lattice-estimator \cite{APS15} see only the triple $(n,q,\chi)$ with $n=kN$; they do not depend on the ring structure. We ran \texttt{LWE.estimate} (default settings, October 2026) with $m=n$, $q=3329$ on the key-recovery instance of each CLH-MAX parameter set and, with the \emph{same call}, on the corresponding ML-KEM instance. Table~\ref{tab:est} reports the output unchanged.
+\begin{table}[h]\centering\small
+\begin{tabular}{lrrrrrrrr}\toprule
+Instance $(n;\ \text{secret},\text{error})$ & BKW & uSVP & BDD & Dual & DH & $\beta_{\mathrm{uSVP}}$ & $\beta_{\mathrm{DH}}$\\\midrule
+$(512;\psi_3,\psi_3)$ [ML-KEM-512] & 178.8 & 143.8 & 140.2 & 149.9 & 139.7 & 406 & 387\\
+$(512;\psi_2,\psi_2)$ [CLH-MAX-512] & 167.2 & 137.1 & 133.7 & 142.6 & 132.8 & 382 & 363\\
+$(768;\psi_2,\psi_2)$ [both] & 238.3 & 204.9 & 201.0 & 214.3 & 196.4 & 624 & 589\\
+$(1024;\psi_2,\psi_2)$ [both] & 315.0 & 275.1 & 270.7 & 288.5 & 262.3 & 874 & 823\\\bottomrule
+\end{tabular}
+\caption{lattice-estimator output, $\log_2$(operations), $q=3329$, $m=n$, one call and one cost model for all rows. DH = dual hybrid, the cheapest attack in every row. Instances for $n=768,1024$ are literally identical for CLH-MAX and ML-KEM, hence identical outputs.}\label{tab:est}
+\end{table}
+The outcome is what the structure of the estimator predicts: for $k=3,4$ the instances coincide with ML-KEM-768/1024 and so do the estimates; for $k=2$ the choice $\eta=2$ makes CLH-MAX-512 about $7$ bits \emph{weaker} than ML-KEM-512 (which uses $\psi_3$ for the key). Hence the ring $\Z_q[X]/\Phi_{257}$ neither helps nor hurts \emph{in these generic estimates}; nothing in them supports a security advantage over ML-KEM. Limitations: only the key-recovery instance was estimated (the message-recovery instance with secret $r$ should also be run), the estimates are for generic MLWE, and we assign no NIST category. Known structural attacks (subfield attacks on overstretched NTRU \cite{ABD16,CJL16}) target large-modulus NTRU-type instances and are not known to apply to MLWE at $q=3329$ in either ring; Remark~\ref{rem:sub} explains why the field structure of $\Rq$ is not obviously free of exploitable structure.
 
-We analyze IND-CPA security via a sequence of three probabilistic games
-over $R_{q}=\mathbb{Z}_{q}[X]/\Phi_{257}(X)$, formalized using the
-Probability Mass Function (PMF) monad in Lean~4/Mathlib.
-
-\begin{definition}[IND-CPA Games]\label{def:games}
-Let $U$ denote the uniform distribution over $R_{q}$ and
-$\chi=\psi_{\eta}$ the centered binomial error distribution.
-For adversary $A$ and challenge bit $b\in\{0,1\}$:
-
-\medskip\noindent
-\textbf{Game$_{0}(A,b)$:} Sample $a\leftarrow U$, $s,e\leftarrow\chi$.
-Set $pk=(a,a\cdot s+e)$.
-Let $(m_{0},m_{1})\leftarrow A.\mathsf{choose}(pk)$.
-Sample $r,e_{1},e_{2}\leftarrow\chi$.
-Return $A.\mathsf{guess}(pk,(m_{0},m_{1}),(a\cdot r+e_{1},\;(a\cdot s+e)\cdot r+e_{2}+m_{b}))$.
-
-\medskip\noindent
-\textbf{Game$_{1}(A,b)$:} As Game$_{0}$, but $pk=(a,u_{0})$ with
-$a,u_{0}\leftarrow U$ independently.
-
-\medskip\noindent
-\textbf{Game$_{2}(A)$:} Sample $a,u_{0},u_{1},u_{2}\leftarrow U$.
-Set $pk=(a,u_{0})$.
-Return $A.\mathsf{guess}(pk,A.\mathsf{choose}(pk),(u_{1},u_{2}))$.
-\end{definition}
-
-\begin{definition}[Advantages]\label{def:adv}
-\[
-\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}(A)
-  :=\bigl|\Pr[\mathrm{Game}_{0}(A,1)=1]-\Pr[\mathrm{Game}_{0}(A,0)=1]\bigr|,
-\]
-\[
-\mathrm{Adv}^{\mathrm{D\text{-}RLWE}}(D)
-  :=\bigl|\Pr[D(a,a\cdot s+e)=1]-\Pr[D(a,u)=1]\bigr|.
-\]
-\end{definition}
-
-\subsection{Formal Statements}
-
-All results below are fully proved in Lean~4; the complete source is in
-Appendix~A.
-
-\begin{axiom}[D-RLWE Hardness]\label{ax:drlwe}
-For all efficient distinguishers $D$:
-$\mathrm{Adv}^{\mathrm{D\text{-}RLWE}}(D)=0$.
-This is the sole computational assumption.
-In Lean~4 it is declared as \texttt{axiom drlwe\_hardness}.
-\end{axiom}
-
-\begin{theorem}[Field Uniformity]\label{thm:uniform}
-For all $a\in R_{q}$:
-$(u\leftarrow U;\;\mathrm{return}\;a\cdot u)\;=_{d}\;U$.
-\end{theorem}
-
-\begin{lemma}[Simulator $B_{1}$ --- pk transition]\label{lem:B1}
-\[
-\mathrm{Adv}^{\mathrm{D\text{-}RLWE}}(B_{1}(A))
-  =\bigl|\Pr[\mathrm{Game}_{0}(A,1)=1]-\Pr[\mathrm{Game}_{1}(A,1)=1]\bigr|.
-\]
+\section{Correctness: decryption failure probability}\label{sec:dfp}
+\begin{lemma}\label{lem:count}
+For $a,b\in\Rq$ with independent coefficients, every coefficient of $ab\in\Rq$ is a signed sum of $510$ products $a_jb_l$ of distinct index pairs, except coefficient $255$ which is a signed sum of $511$.
 \end{lemma}
+\noindent The proof is a direct count of index pairs (Appendix~\ref{app:count}). This is roughly twice the $256$ terms of a negacyclic product, so the variance of a product coefficient is about $2\sigma^4\cdot256$ rather than $256\sigma^4$.
 
-\begin{lemma}[Simulator $B_{2}$ --- ciphertext transition]\label{lem:B2}
-\[
-\mathrm{Adv}^{\mathrm{D\text{-}RLWE}}(B_{2}(A))
-  =\bigl|\Pr[\mathrm{Game}_{1}(A,1)=1]-\Pr[\mathrm{Game}_{2}(A)=1]\bigr|.
-\]
-\end{lemma}
-
-\begin{lemma}[Game Chain]\label{lem:chain}
-Under Axiom~\ref{ax:drlwe}:
-$\Pr[\mathrm{Game}_{0}(A,0)=1]=\Pr[\mathrm{Game}_{2}(A)=1]$.
-\end{lemma}
-
-\begin{corollary}\label{cor:adv-eq}
-$\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}(A)
-  =|\Pr[\mathrm{Game}_{0}(A,1)=1]-\Pr[\mathrm{Game}_{2}(A)=1]|$.
-\end{corollary}
-
-\begin{theorem}[IND-CPA Security of CLH MAX]\label{thm:indcpa}
-For all adversaries $A$:
-\[
-\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}(A)
-  \;\le\;
-\mathrm{Adv}^{\mathrm{D\text{-}RLWE}}(B_{1}(A))
-  +\mathrm{Adv}^{\mathrm{D\text{-}RLWE}}(B_{2}(A)).
-\]
-\end{theorem}
-
-\begin{proof}
-By Corollary~\ref{cor:adv-eq}, Lemma~\ref{lem:B1}, and Lemma~\ref{lem:B2},
-the inequality reduces to the triangle inequality on $|\cdot|$ over $\mathbb{R}$,
-proved in Lean~4 as \texttt{abs\_sub\_le}.
-\end{proof}
-
-\begin{corollary}
-Under Axiom~\ref{ax:drlwe}, $\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}(A)=0$
-for all adversaries $A$.
-\end{corollary}
-
-\subsection{Proof Architecture}
-
-Table~\ref{tab:audit} summarises the 16 proof components.
-
-\begin{table}[h]
-\centering\small
-\begin{tabular}{llll}
-\toprule
-\textbf{Component} & \textbf{Type} & \textbf{Status} & \textbf{Depends on}\\
-\midrule
-\texttt{drlwe\_hardness}          & axiom   & AXIOM         & (sole assumption)\\
-\texttt{[Field Rq]}               & instance& GIVEN         & $\Phi_{257}$ irred.\ mod $q$\\
-\texttt{Adv\_DRLWE\_eq\_zero}     & lemma   & $\checkmark$  & \texttt{drlwe\_hardness}\\
-\texttt{mul\_uniform\_eq}         & theorem & $\checkmark$  & \texttt{[Field Rq]}\\
-\texttt{B1}, \texttt{B2}          & def.    & $\checkmark$  & ---\\
-\texttt{B1\_real\_eq\_Game0}      & lemma   & $\checkmark$  & \texttt{PMF.bind\_apply}\\
-\texttt{B1\_unif\_eq\_Game1}      & lemma   & $\checkmark$  & \texttt{PMF.bind\_apply}\\
-\texttt{Adv\_B1\_eq}              & lemma   & $\checkmark$  & B1 lemmas\\
-\texttt{B2\_real\_eq\_Game1}      & lemma   & $\checkmark$  & \texttt{drlwe\_hardness}\\
-\texttt{B2\_unif\_eq\_Game2}      & lemma   & $\checkmark$  & \texttt{mul\_uniform\_eq}\\
-\texttt{Adv\_B2\_eq}              & lemma   & $\checkmark$  & B2 lemmas\\
-\texttt{Game0\_false\_eq\_Game2}  & lemma   & $\checkmark$  & \texttt{drlwe\_hardness}$\times 2$\\
-\texttt{Adv\_INDCPA\_eq\_game\_diff}& lemma & $\checkmark$  & game chain\\
-\texttt{clh\_max\_indcpa\_security}& theorem& $\checkmark$ 0 sorry & \texttt{abs\_sub\_le}\\
-\texttt{clh\_max\_indcpa\_zero}   & corollary& $\checkmark$ 0 sorry & security + zero\\
-\bottomrule
+For module rank $k$, the coefficient $E_i$ of $e^{T}r-s^{T}e_1+e_2$ is therefore a sum of $2k\cdot511$ products of two independent $\psi_2$ samples (a conservative count) plus one $\psi_2$ sample, with variance $\sigma_E^2=1022k+1$. Following the usual heuristic of treating the summands as independent, we compute the \emph{exact} distribution by convolution and bound $\delta\le 256\cdot\Pr[|E_i|\ge\lfloor q/4\rfloor]$ with $\lfloor q/4\rfloor=832$. The script is in Appendix~\ref{app:script}.
+\begin{table}[h]\centering
+\begin{tabular}{lrrrr}\toprule
+Set & $k$ & $\sigma_E^2$ & $\log_2\Pr[|E_i|\ge832]$ & $\log_2\delta$\\\midrule
+CLH-MAX-512 & 2 & 2045 & $-239.0$ & $-231$\\
+CLH-MAX-768 & 3 & 3067 & $-163.9$ & $-156$\\
+CLH-MAX-1024 & 4 & 4089 & $-124.7$ & $-117$\\\bottomrule
 \end{tabular}
-\caption{Proof component audit. Axiom count: 1. Sorry count: 0.}
-\label{tab:audit}
+\caption{Decryption failure probability, no ciphertext compression, $q=3329$, $\eta=2$.}
+\end{table}
+Sets with $k=2,3$ satisfy $\delta<2^{-128}$; \textbf{the set with $k=4$ does not} ($\delta\approx2^{-117}$). Using it inside FO would require changing parameters (e.g.\ a larger modulus with adapted noise, or an error-correcting encoding of $m$), which would also change the security analysis; we leave this open. The Gaussian tail approximation $\exp(-832^2/2\sigma_E^2)$ gives $\approx 2^{-245}$ per coefficient for $k=2$, in line with the exact value.
+
+\paragraph{Trade-off between security and correctness at $k=2$.} Raising the key noise of CLH-MAX-512 to ML-KEM-512's $\eta_1=3$ (with $r\leftarrow\psi_3$, $e_1,e_2\leftarrow\psi_2$, so that the key-recovery instance equals the ML-KEM-512 row of Table~\ref{tab:est}) closes the $7$-bit gap but raises $\sigma_E^2$ to about $3834$; the exact computation gives $\delta\approx2^{-123}$, which does \emph{not} meet $2^{-128}$ (ML-KEM-512 achieves its failure rate with only $256$ terms per product coefficient, plus ciphertext compression effects not modelled here). Thus for conductor $257$ the near doubling of terms per coefficient (Lemma~\ref{lem:count}) forces a choice at $k=2$: $\eta=2$ with $\delta\approx2^{-231}$ and about $2^{132.8}$ (dual hybrid), or $\eta_1=3$ with $\delta\approx2^{-123}$ and about $2^{139.7}$. We specify the former and regard the latter as an open design question.
+
+\section{Arithmetic}\label{sec:arith}
+By Section~\ref{sec:ring}, multiplication in $\Rq$ is a length-$257$ cyclic convolution followed by a correction. Schoolbook multiplication costs $256^2=65{,}536$ coefficient products per ring multiplication; $\mathsf{KeyGen}$ needs $k^2$ ring products for $As$ and $\mathsf{Enc}$ needs $k^2+k+k$ more. A fast NTT route requires a transform of length $\ge511$ covering the linear convolution, i.e.\ $512\mid q-1$. $q=12289$ satisfies this ($12288=3\cdot2^{12}$) and $\mathrm{ord}_{257}(12289)=256$, but $q=3329$ does not ($3328=2^8\cdot13$). With $q=3329$ one must use Karatsuba/Toom--Cook, Bluestein/Rader-type or lifted-modulus methods. No implementation or benchmark is presented and we make no performance claim. Changing to $q=12289$ would require re-deriving the noise parameters, the security estimates and $\delta$.
+
+\section{Comparison with ML-KEM}
+\begin{table}[h]\centering\small
+\begin{tabular}{p{3.4cm}p{5.8cm}p{5.2cm}}\toprule
+ & CLH-MAX (this work) & ML-KEM (FIPS 203)\\\midrule
+Ring & $\Z_{3329}[X]/\Phi_{257}$, field $\F_{q^{256}}$ & $\Z_{3329}[X]/(X^{256}+1)$, 128 quadratic factors\\
+Fast multiplication & no negacyclic NTT at $q=3329$ & incomplete 7-layer NTT\\
+Noise & $\psi_2$ throughout & $\psi_3$ in the key for ML-KEM-512\\
+Generic MLWE estimate & Table~\ref{tab:est}: identical to ML-KEM for $k=3,4$; $\approx7$ bits lower at $k=2$ & same estimator call\\
+Worst-case motivation & LPR13, outside concrete regime & same\\
+Standardisation / analysis & none (research proposal) & NIST standard, extensive analysis\\
+$\delta$ & $<2^{-128}$ for $k=2,3$; $\approx2^{-117}$ for $k=4$ & see FIPS 203\\\bottomrule
+\end{tabular}
+\caption{Qualitative comparison; no security ranking is claimed.}
 \end{table}
 
-%─────────────────────────────────────────────────────────────────
-\section{Concrete Security Analysis}
-\label{sec:security}
-%─────────────────────────────────────────────────────────────────
+\section{Artifact availability}
+A Lean~4 development accompanied an earlier version of this work and is deposited at \url{https://doi.org/10.5281/zenodo.22943292}. That deposit corresponds to the earlier version and must not be read as verifying the statements of the present paper; it will be updated to match Theorem~\ref{thm:cpa} (two hybrid hops with $k$ and $k+1$ samples, no unconditional-hardness axiom). The scripts of Appendix~\ref{app:script} are the reproducible parts of this version.
 
-Concrete security was evaluated using the lattice-estimator of
-Albrecht et al.~\cite{APS15}, the standard tool for NIST PQC submissions.
-All attacks were run against the Module-CLH MAX parameter sets
-($k_{\mathrm{mod}}=2,3,4$ over $\mathbb{Z}_{q}[X]/\Phi_{257}(X)$,
-$q=3329$, $\eta=2$).
-Results are in $\log_{2}(\mathrm{operations})$.
+\section{Open problems}
+(i) Choose $k=2$ and $k=4$ parameters that meet both $\delta<2^{-128}$ and ML-KEM-level security (the extra terms per product coefficient in $\Rq$ cost correctness; ciphertext compression, an error-correcting message encoding or a different modulus are candidates). (ii) Estimate the message-recovery instance as well as key recovery. (iii) Efficient implementation at $q=3329$. (iv) Study whether the field structure and the order-$256$ Galois action of $\Rq$ give any algebraic leverage against MLWE. (v) A machine-checked proof of Theorem~\ref{thm:cpa}.
 
-\begin{table}[h]
-\centering\small
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{lcccccccl}
-\toprule
-\textbf{Parameter Set} & \textbf{BKW} & \textbf{uSVP} & \textbf{BDD}
-  & \textbf{Dual} & \textbf{D-Hyb} & \textbf{Worst} & \textbf{$\beta$}
-  & \textbf{NIST}\\
-\midrule
-CLH-MAX-256 ($n=256$, base)
-  & 95.8 & 73.1 & 70.5 & 75.4 & 71.9 & 70.5 & 141 & $<$ L1\\
-M-CLH-MAX-512 ($k=2$, $n=512$)
-  & 167.2 & 137.1 & 133.7 & 142.6 & 132.8 & \textbf{132.8} & 363 & L1 $\checkmark$\\
-M-CLH-MAX-768 ($k=3$, $n=768$)
-  & 238.3 & 204.9 & 201.0 & 214.3 & 196.4 & \textbf{196.4} & 589 & L3 $\checkmark$\\
-M-CLH-MAX-1024 ($k=4$, $n=1024$)
-  & 315.0 & 275.1 & 270.7 & 288.5 & 262.3 & \textbf{262.3} & 823 & L5 $\checkmark$\\
-\bottomrule
-\end{tabular}
-\caption{Full lattice-estimator results for Module-CLH MAX.
-  All values are $\log_{2}(\mathrm{operations})$.
-  Dominant attack: dual hybrid (MATZOV~2022).}
-\label{tab:estimator}
-\end{table}
-
-\subsection{Comparison with ML-KEM}
-
-\begin{table}[h]
-\centering\small
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Scheme} & \textbf{$k$} & \textbf{$n$} & \textbf{Classical}
-  & \textbf{Quantum} & \textbf{$\beta$} & \textbf{Subfield}\\
-\midrule
-Module-CLH-MAX $k=2$ & 2 & 512 & $2^{132.8}$ & $2^{121}$ & 363 & No $\checkmark$\\
-ML-KEM-512           & 2 & 512 & $2^{118}$   & $2^{107}$ & 393 & Yes $\times$\\
-\midrule
-Module-CLH-MAX $k=3$ & 3 & 768 & $2^{196.4}$ & $2^{178}$ & 589 & No $\checkmark$\\
-ML-KEM-768           & 3 & 768 & $2^{183}$   & $2^{166}$ & 609 & Yes $\times$\\
-\midrule
-Module-CLH-MAX $k=4$ & 4 & 1024 & $2^{262.3}$ & $2^{238}$ & 823 & No $\checkmark$\\
-ML-KEM-1024          & 4 & 1024 & $2^{247}$   & $2^{224}$ & 829 & Yes $\times$\\
-\bottomrule
-\end{tabular}
-\caption{Module-CLH MAX vs ML-KEM security comparison.
-  CLH MAX exceeds ML-KEM by $+14.8$, $+13.4$, $+15.3$ bits at
-  Levels~1, 3, 5.}
-\label{tab:vs-mlkem}
-\end{table}
-
-Module-CLH MAX exceeds ML-KEM security by 14.8 bits at Level~1,
-13.4 bits at Level~3, and 15.3 bits at Level~5.
-The subfield attack of Cheon et al.\ (2016), which exploits the
-256-factor decomposition of $X^{256}+1$ modulo $q$ in Kyber,
-does not apply to CLH MAX because $\Phi_{257}(X)$ is irreducible
-over $\mathbb{Z}_{q}$.
-
-%─────────────────────────────────────────────────────────────────
-\section{Arithmetic Optimisation}
-%─────────────────────────────────────────────────────────────────
-
-The baseline multiplication algorithm uses NTT-512 with explicit reduction
-modulo $\Phi_{257}(X)$, requiring approximately 14,336 operations mod $q$
---- a factor of 3.3$\times$ more than Kyber's negacyclic NTT-256
-(4,352~ops).
-With $q=12289$ (which satisfies $q\equiv 1\pmod{512}$ \emph{and}
-$\mathrm{ord}_{257}(q)=256$ simultaneously), full NTT-512 is available.
-
-\begin{table}[h]
-\centering\small
-\begin{tabular}{lccc}
-\toprule
-\textbf{Operation} & \textbf{NTT-512 calls} & \textbf{NTT-256 calls (Kyber $k=3$)}
-  & \textbf{Ratio}\\
-\midrule
-KeyGen (forward $A$)    & 9  & 9  & $1.00\times$\\
-KeyGen (forward $s$)    & 3  & 3  & $1.00\times$\\
-KeyGen (inverse $b$)    & 3  & 3  & $1.00\times$\\
-Encaps (forward $A,r$)  & 12 & 12 & $1.00\times$\\
-Encaps (inverse $c_1,c_2$) & 4 & 4 & $1.00\times$\\
-\midrule
-Total NTT calls         & 31 & 31 & $1.00\times$\\
-Cost per NTT call       & NTT-512 (9 layers) & NTT-256 (8 layers) & $\approx 2.25\times$\\
-\textbf{Overall ratio}  &    &    & $\approx 2.25\times$\\
-\bottomrule
-\end{tabular}
-\caption{NTT call count for Module-CLH MAX $k=3$ vs Kyber $k=3$.
-  The number of calls is identical; cost per call differs by $2.25\times$.}
-\label{tab:ntt}
-\end{table}
-
-The $2.25\times$ overhead is algebraically irreducible:
-it is the exact cost of $\Phi_{257}(X)$ not admitting a negacyclic
-convolution of size 256.
-
-%─────────────────────────────────────────────────────────────────
-\section{Concrete Parameters and Decryption Failure Probability}
-\label{sec:dfp}
-%─────────────────────────────────────────────────────────────────
-
-\begin{table}[h]
-\centering\small
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{lcccccccccc}
-\toprule
-\textbf{Scheme} & $k$ & $n$ & $q$ & \textbf{Ring} & $\eta$
-  & \textbf{pk} & \textbf{sk} & \textbf{ct} & \textbf{Worst} & \textbf{Level}\\
-\midrule
-M-CLH-MAX-512
-  & 2 & 512 & 3329 & $\mathbb{F}_{q^{256}}^{2}$ & 2
-  & 800\,B & 1600\,B & 768\,B & $2^{132.8}$ & L1\\
-M-CLH-MAX-768
-  & 3 & 768 & 3329 & $\mathbb{F}_{q^{256}}^{3}$ & 2
-  & 1184\,B & 2400\,B & 1088\,B & $2^{196.4}$ & L3\\
-M-CLH-MAX-1024
-  & 4 & 1024 & 3329 & $\mathbb{F}_{q^{256}}^{4}$ & 2
-  & 1568\,B & 3168\,B & 1568\,B & $2^{262.3}$ & L5\\
-\bottomrule
-\end{tabular}
-\caption{Module-CLH MAX parameter sets (security confirmed by lattice-estimator).
-  Key sizes are identical to ML-KEM.}
-\label{tab:params}
-\end{table}
-
-The error polynomial $E(X)=e\cdot r+e_{2}-e_{1}\cdot s$ has coefficient
-variance $\sigma^{2}_{E}=2n\sigma^{4}+\sigma^{2}$.
-A failure occurs when $|E_{i}|\ge\lfloor q/4\rfloor$ for some~$i$.
-Applying the Gaussian tail bound and union bound over $n$ coefficients:
-\[
-\delta \;\le\; 2n\cdot\exp\!\Bigl(-\frac{\lfloor q/4\rfloor^{2}}
-                               {4n\sigma^{4}+2\sigma^{2}}\Bigr).
-\]
-
-\begin{table}[h]
-\centering\small
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Scheme} & $n$ & $q$ & $\sigma^{2}_{E}$ & $\lfloor q/4\rfloor$
-  & $\log_{2}(\delta)$\\
-\midrule
-M-CLH-MAX-512  & 512  & 3329 & 1025 & 832 & $<-2{,}012$\\
-M-CLH-MAX-768  & 768  & 3329 & 1537 & 832 & $<-1{,}340$\\
-M-CLH-MAX-1024 & 1024 & 3329 & 2049 & 832 & $<-1{,}005$\\
-\bottomrule
-\end{tabular}
-\caption{DFP bounds. All satisfy $\delta\ll 2^{-128}$,
-  meeting the FO transform prerequisite.}
-\label{tab:dfp}
-\end{table}
-
-%─────────────────────────────────────────────────────────────────
-\section{Comparison with Kyber/ML-KEM}
-%─────────────────────────────────────────────────────────────────
-
-\begin{table}[h]
-\centering\small
-\begin{tabular}{p{3.5cm}p{5cm}p{5cm}}
-\toprule
-\textbf{Criterion} & \textbf{Module-CLH MAX} & \textbf{ML-KEM (Kyber)}\\
-\midrule
-Ring modulus & $\Phi_{257}(X)$ (irreducible) & $X^{256}+1$ (256 factors)\\
-Ring structure & Field $\mathbb{F}_{q^{256}}$ per component & Product of 256 copies of $\mathbb{F}_{q}$\\
-$q\mathcal{O}_{K}$ & 1 prime ideal (inert) & 256 prime ideals (split)\\
-Subfield attacks & None $\checkmark$ & Present $\times$\\
-Worst-case reduction & ideal-SIVP $\to$ RLWE & ideal-SIVP $\to$ RLWE\\
-Security L1 (cl/qu) & $2^{132.8}/2^{121}$ & $2^{118}/2^{107}$\\
-Security L3 (cl/qu) & $2^{196.4}/2^{178}$ & $2^{183}/2^{166}$\\
-Security L5 (cl/qu) & $2^{262.3}/2^{238}$ & $2^{247}/2^{224}$\\
-Key/ct sizes & Identical to ML-KEM & 800/1632/768\,B (L1)\\
-NTT type & NTT-512 & NTT-256 negacyclic\\
-Arithmetic overhead & $\approx 2.25\times$ & $1\times$ (reference)\\
-IND-CPA proof & Lean~4: 1 axiom, 0 sorry & Partial (EasyCrypt)\\
-IND-CCA2 & FO-T transform & FIPS~203\\
-NIST standard & No (research) & ML-KEM (FIPS~203)\\
-\bottomrule
-\end{tabular}
-\caption{Module-CLH MAX vs ML-KEM. Security values from lattice-estimator
-  (CLH MAX) and NIST submission (ML-KEM).}
-\label{tab:comparison}
-\end{table}
-
-%─────────────────────────────────────────────────────────────────
-\section{Artifact Availability}
-%─────────────────────────────────────────────────────────────────
-
-The complete Lean~4 source (\texttt{ClhMaxSecurity.lean}) is deposited
-on Zenodo:
-\begin{center}
-\url{https://doi.org/10.5281/zenodo.22883946}
-\end{center}
-
-%─────────────────────────────────────────────────────────────────
-\section{Conclusion}
-%─────────────────────────────────────────────────────────────────
-
-We have presented Module-CLH MAX, a post-quantum KEM family built over
-$R_{q}=\mathbb{Z}_{q}[X]/\Phi_{257}(X)\cong\mathbb{F}_{q^{256}}$,
-extended to module dimensions $k=2,3,4$ following the Module-LWE structure
-of ML-KEM.
-The paper establishes:
-(1)~worst-case hardness via ideal-SIVP $\to$ D-RLWE with explicit
-$\gamma\approx 602{,}613$;
-(2)~machine-checked IND-CPA in Lean~4 (1~axiom, 0~sorry);
-(3)~concrete security exceeding ML-KEM by 14--15 bits at every NIST level,
-confirmed by the lattice-estimator;
-(4)~NTT-512 arithmetic reducing the performance gap to $2.25\times$;
-and (5)~full IND-CCA2 via the Fujisaki--Okamoto transform.
-The $2.25\times$ arithmetic overhead is the irreducible algebraic cost of
-full-field irreducibility and is not reducible without changing the ring
-modulus.
-
-%─────────────────────────────────────────────────────────────────
-\begin{thebibliography}{99}
-%─────────────────────────────────────────────────────────────────
-
-\bibitem{APS15}
-M.\,R.\ Albrecht, R.\ Player, S.\ Scott.
-On the concrete hardness of Learning with Errors.
-\emph{Journal of Mathematical Cryptology} 9(3):169--203, 2015.
-
-\bibitem{CJL16}
-J.\,H.\ Cheon, J.\ Jeong, C.\ Lee.
-Cryptanalysis of the multilinear map on the integers.
-\emph{EUROCRYPT 2016}, LNCS 9665, pp.\ 47--66.
-
-\bibitem{CT65}
-J.\,W.\ Cooley, J.\,W.\ Tukey.
-An algorithm for the machine calculation of complex Fourier series.
-\emph{Mathematics of Computation} 19(90):297--301, 1965.
-
-\bibitem{FO13}
-E.\ Fujisaki, T.\ Okamoto.
-Secure integration of asymmetric and symmetric encryption schemes.
-\emph{Journal of Cryptology} 26(1):80--101, 2013.
-
-\bibitem{HHK17}
-D.\ Hofheinz, K.\ H\"ovelmanns, E.\ Kiltz.
-A modular analysis of the Fujisaki--Okamoto transformation.
-\emph{TCC 2017}, LNCS 10677, pp.\ 341--371.
-
-\bibitem{LPR13}
-V.\ Lyubashevsky, C.\ Peikert, O.\ Regev.
-On ideal lattices and learning with errors over rings.
-\emph{Journal of the ACM} 60(6):43:1--43:35, 2013.
-
-\bibitem{Lean4}
-L.\ de Moura, S.\ Ullrich.
-The Lean~4 theorem prover and programming language.
-\emph{CADE 28}, LNCS 12699, pp.\ 625--635, 2021.
-
-\bibitem{NIST2024}
-NIST.
-FIPS~203: Module-Lattice-Based Key-Encapsulation Mechanism Standard. 2024.
-
-\bibitem{Pei09}
-C.\ Peikert.
-Public-key cryptosystems from the worst-case shortest vector problem.
-\emph{STOC 2009}, pp.\ 333--342.
-
-\bibitem{PR07}
-C.\ Peikert, A.\ Rosen.
-Lattices that admit logarithmic worst-case to average-case connection factors.
-\emph{STOC 2007}, pp.\ 478--487.
-
-\bibitem{Rad68}
-C.\,M.\ Rader.
-Discrete Fourier transforms when the number of data samples is prime.
-\emph{Proceedings of the IEEE} 56(6):1107--1108, 1968.
-
-\bibitem{Reg09}
-O.\ Regev.
-On lattices, learning with errors, random linear codes, and cryptography.
-\emph{Journal of the ACM} 56(6):34:1--34:40, 2009.
-
-\end{thebibliography}
-
-%─────────────────────────────────────────────────────────────────
 \appendix
-\section{Complete Lean~4 Formalization}
-\label{app:lean}
-%─────────────────────────────────────────────────────────────────
+\section{Proof of Lemma~\ref{lem:count}}\label{app:count}
+Coefficient $i$ of $ab\bmod\Phi_{257}$ is $p_i-p_{256}$ with $p_i=\sum_{j+l\equiv i\ (257)}a_jb_l$, $0\le j,l\le255$. For $0\le i\le255$: pairs with $j+l=i$ number $i+1$, and pairs with $j+l=i+257$ number $255-(i+2)+1=254-i$ (for $i\le254$) and $0$ for $i=255$. So $p_i$ has $255$ terms for $i\le254$ and $256$ terms for $i=255$. For $p_{256}$: $j+l=256$ gives $255$ pairs ($j=1,\dots,255$); $j+l=513>510$ is impossible, so $p_{256}$ has $255$ terms. The index-pair sets of $p_i$ and $p_{256}$ are disjoint, hence the coefficient is a signed sum of $255+255=510$ products, or $256+255=511$ for $i=255$. $\square$
 
-File: \texttt{ClhMaxSecurity.lean} \quad
-Namespace: \texttt{ClhMax} \quad
-Axiom count: 1 \quad Sorry count: 0\\
-Deposited: \url{https://doi.org/10.5281/zenodo.22883946}
+\section{Simulators for Theorem~\ref{thm:cpa}}\label{app:sim}
+\begin{verbatim}
+B1(A, t*):                       # MLWE challenge: k samples, secret s
+  (m0, m1) <- Adv.choose(pk=(A, t*)); b <- {0,1}
+  r, e1 <- chi^k; e2 <- chi
+  u = A^T r + e1; v = t*^T r + e2 + Enc1(m_b)
+  b' <- Adv.guess(pk, (u, v)); return [b' == b]
 
-\begin{lstlisting}[language={}]
-/-! CLH MAX KEM -- IND-CPA Reduction in Lean 4 / Mathlib.
-    R_q = Z_q[X]/Phi_257(X) ≅ F_{q^256}  (Phi_257 irreducible mod q).
-    Axiom count : 1.   Sorry count : 0.                           -/
-import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Probability.ProbabilityMassFunction.Monad
-import Mathlib.Data.Real.Basic
-import Mathlib.Algebra.Field.Basic
-open PMF
-namespace ClhMax
+B2(B, w):                        # MLWE challenge: k+1 samples, secret r
+  parse B = [A^T ; t^T]          # A in R^{k x k}, t in R^k
+  (m0, m1) <- Adv.choose(pk=(A, t)); b <- {0,1}
+  u = w[1..k]; v = w[k+1] + Enc1(m_b)
+  b' <- Adv.guess(pk, (u, v)); return [b' == b]
+\end{verbatim}
+Real MLWE samples reproduce the corresponding game exactly; uniform samples reproduce the next game.
 
-variable {Rq : Type} [Field Rq] [Fintype Rq] [DecidableEq Rq]
-variable (U chi : PMF Rq)  -- U = uniform over F_{q^256}, chi = psi_eta
+\section{Reproducibility scripts}\label{app:script}
+\paragraph{Decryption failure probability} (exact convolution under the independence heuristic; $e,s,r\leftarrow\psi_{\eta_1}$, $e_1,e_2\leftarrow\psi_{\eta_2}$).
+\begin{verbatim}
+import numpy as np
+from math import log2, comb
+def cbd(eta):
+    return np.array([comb(2*eta, i) for i in range(2*eta+1)], float)/4**eta, eta
+def prod_pmf(x, y):
+    p1, o1 = cbd(x); p2, o2 = cbd(y); d = {}
+    for i, a in enumerate(range(-o1, o1+1)):
+        for j, b in enumerate(range(-o2, o2+1)):
+            d[a*b] = d.get(a*b, 0) + p1[i]*p2[j]
+    off = max(abs(v) for v in d); arr = np.zeros(2*off+1)
+    for v, p in d.items(): arr[v+off] += p
+    return arr, off
+def conv_pow(p, off, m):
+    res, roff, base, boff = np.array([1.0]), 0, p.copy(), off
+    while m:
+        if m & 1: res = np.convolve(res, base); roff += boff
+        m >>= 1
+        if m: base = np.convolve(base, base); boff *= 2
+    return res, roff
+def delta(k, eta1, eta2, thr=832):        # thr = floor(q/4), q = 3329
+    pa, oa = prod_pmf(eta1, eta1); pb, ob = prod_pmf(eta1, eta2)
+    d1, o1 = conv_pow(pa, oa, k*511); d2, o2 = conv_pow(pb, ob, k*511)
+    d, o = np.convolve(d1, d2), o1 + o2
+    p2, oo = cbd(eta2); d, o = np.convolve(d, p2), o + oo
+    idx = np.arange(len(d)) - o
+    t = d[np.abs(idx) >= thr].sum()
+    return log2(t), log2(t) + 8           # per coefficient, union over 256
+for k, e1, e2 in [(2,2,2), (3,2,2), (4,2,2), (2,3,2)]:
+    print(k, e1, e2, delta(k, e1, e2))
+\end{verbatim}
+\paragraph{lattice-estimator runs} (same call for all rows; record the estimator commit).
+\begin{verbatim}
+from estimator import *
+CBD = ND.CenteredBinomial
+sets = [("CLH-MAX-512", 512, 2, 2), ("CLH-MAX-768", 768, 2, 2),
+        ("CLH-MAX-1024", 1024, 2, 2), ("ML-KEM-512", 512, 3, 3),
+        ("ML-KEM-768", 768, 2, 2), ("ML-KEM-1024", 1024, 2, 2)]
+for name, n, es, ee in sets:
+    p = LWE.Parameters(n=n, q=3329, Xs=CBD(es), Xe=CBD(ee), m=n, tag=name)
+    print(name); print(LWE.estimate(p))
+\end{verbatim}
 
--- S1: Games and advantages
-structure Adversary (Rq : Type) where
-  choose : Rq x Rq -> PMF (Rq x Rq)
-  guess  : Rq x Rq -> Rq x Rq -> Rq x Rq -> PMF Bool
-
-noncomputable def Game0 (A : Adversary Rq) (b : Bool) : PMF Bool := do
-  let a <- U; let s <- chi; let e <- chi
-  let (m0, m1) <- A.choose (a, a*s+e)
-  let r <- chi; let e1 <- chi; let e2 <- chi
-  A.guess (a, a*s+e) (m0, m1)
-          (a*r+e1, (a*s+e)*r+e2 + if b then m1 else m0)
-
-noncomputable def Game1 (A : Adversary Rq) (b : Bool) : PMF Bool := do
-  let a <- U; let u0 <- U
-  let (m0, m1) <- A.choose (a, u0)
-  let r <- chi; let e1 <- chi; let e2 <- chi
-  A.guess (a, u0) (m0, m1) (a*r+e1, u0*r+e2 + if b then m1 else m0)
-
-noncomputable def Game2 (A : Adversary Rq) : PMF Bool := do
-  let a <- U; let u0 <- U
-  let (m0, m1) <- A.choose (a, u0)
-  let u1 <- U; let u2 <- U
-  A.guess (a, u0) (m0, m1) (u1, u2)
-
-noncomputable def Adv_INDCPA (A : Adversary Rq) : Real :=
-  |(Game0 U chi A true).toFun true - (Game0 U chi A false).toFun true|
-
-structure Dist_DRLWE (Rq : Type) where run : Rq x Rq -> PMF Bool
-
-noncomputable def Adv_DRLWE (D : Dist_DRLWE Rq) : Real :=
-  |(do let a <- U; let s <- chi; let e <- chi;
-       D.run (a, a*s+e)).toFun true
-  -(do let a <- U; let u <- U; D.run (a, u)).toFun true|
-
--- S2: Sole computational axiom
-axiom drlwe_hardness (D : Dist_DRLWE Rq) :
-    (do let a <- U; let s <- chi; let e <- chi;
-        D.run (a, a*s+e)).toFun true
-  = (do let a <- U; let u <- U; D.run (a, u)).toFun true
-
-lemma Adv_DRLWE_eq_zero (D : Dist_DRLWE Rq) :
-    Adv_DRLWE U chi D = 0 := by
-  simp [Adv_DRLWE, drlwe_hardness]
-
--- S3: Field uniformity theorem (proved, not assumed)
-theorem mul_uniform_eq (a : Rq) :
-    (do let u <- U; pure (a * u) : PMF Rq) = U := by
-  ext v; simp only [PMF.bind_apply, PMF.pure_apply]
-  by_cases ha : a = 0
-  . subst ha; simp
-  . rw [Finset.sum_eq_single (a⁻¹ * v)]
-    . simp [mul_inv_cancel_left₀ ha]
-    . intro u _ hne
-      simp only [ite_eq_right_iff, one_ne_zero, imp_false]
-      intro heq; exact hne (by rw [<- heq]; field_simp)
-    . intro hv; exact absurd (Finset.mem_univ _) hv
-
--- S4: Simulator B1 -- pk hop (Lemma 5.5)
-noncomputable def B1 (A : Adversary Rq) : Dist_DRLWE Rq where
-  run := fun (a, b) => do
-    let (m0, m1) <- A.choose (a, b)
-    let r <- chi; let e1 <- chi; let e2 <- chi
-    A.guess (a, b) (m0, m1) (a*r+e1, b*r+e2+m1)
-
-lemma B1_real_eq_Game0 (A : Adversary Rq) :
-    (do let a <- U; let s <- chi; let e <- chi;
-        (B1 chi A).run (a, a*s+e)) = Game0 U chi A true := by
-  simp only [B1, Game0]; ext x
-  simp only [PMF.bind_apply]; congr 1; ext a; congr 1; ext s
-  congr 1; ext e; simp [PMF.bind_apply]
-
-lemma B1_unif_eq_Game1 (A : Adversary Rq) :
-    (do let a <- U; let u <- U; (B1 chi A).run (a, u))
-    = Game1 U chi A true := by
-  simp only [B1, Game1]; ext x
-  simp only [PMF.bind_apply]; congr 1; ext a; congr 1; ext u
-  simp [PMF.bind_apply]
-
--- S5: Simulator B2 -- ciphertext hop (Lemma 5.6)
-noncomputable def B2 (A : Adversary Rq) : Dist_DRLWE Rq where
-  run := fun (a, b) => do
-    let a2 <- U; let u0 <- U
-    let (m0, m1) <- A.choose (a2, u0)
-    let e2 <- chi
-    A.guess (a2, u0) (m0, m1) (b, a*b+e2+m1)
-
--- S6: Game chain (Lemma 5.7)
-lemma Game0_false_eq_Game2 (A : Adversary Rq) :
-    (Game0 U chi A false).toFun true = (Game2 U A).toFun true := by
-  have h1 : (Game0 U chi A false).toFun true
-          = (Game1 U chi A false).toFun true :=
-    drlwe_hardness (U := U) (chi := chi) { run := fun (a, b) => do
-      let (m0, m1) <- A.choose (a, b)
-      let r <- chi; let e1 <- chi; let e2 <- chi
-      A.guess (a, b) (m0, m1) (a*r+e1, b*r+e2+m0) }
-  have h2 : (Game1 U chi A false).toFun true
-          = (Game2 U A).toFun true :=
-    drlwe_hardness (U := U) (chi := chi) { run := fun (a, b) => do
-      let a2 <- U; let u0 <- U
-      let (m0, m1) <- A.choose (a2, u0); let e2 <- chi
-      A.guess (a2, u0) (m0, m1) (b, a*b+e2+m0) }
-  rw [h1, h2]
-
--- S7: Main theorem (Theorem 5.9)
-/-- Adv_INDCPA(A) <= Adv_DRLWE(B1) + Adv_DRLWE(B2).
-    Axiom count: 1.  Sorry count: 0.                              -/
-theorem clh_max_indcpa_security (A : Adversary Rq) :
-    Adv_INDCPA U chi A <=
-    Adv_DRLWE U chi (B1 chi A) + Adv_DRLWE U chi (B2 U chi A) := by
-  rw [Adv_INDCPA_eq_game_diff, Adv_B1_eq, Adv_B2_eq]
-  exact abs_sub_le
-    ((Game0 U chi A true).toFun true)
-    ((Game1 U chi A true).toFun true)
-    ((Game2 U A).toFun true)
-
-/-- Corollary 5.10: Adv_INDCPA = 0 under D-RLWE hardness.         -/
-corollary clh_max_indcpa_zero (A : Adversary Rq) :
-    Adv_INDCPA U chi A = 0 := by
-  have h := clh_max_indcpa_security U chi A
-  rw [Adv_DRLWE_eq_zero, Adv_DRLWE_eq_zero] at h
-  linarith [abs_nonneg (Adv_INDCPA U chi A)]
-
-end ClhMax
-\end{lstlisting}
-
+\begin{thebibliography}{99}
+\bibitem{ABD16} M.~Albrecht, S.~Bai, L.~Ducas. A subfield lattice attack on overstretched NTRU assumptions. CRYPTO 2016.
+\bibitem{APS15} M.~Albrecht, R.~Player, S.~Scott. On the concrete hardness of learning with errors. J.\ Math.\ Cryptology 9(3), 2015.
+\bibitem{BDKLLSSS18} J.~Bos, L.~Ducas, E.~Kiltz, T.~Lepoint, V.~Lyubashevsky, J.~Schanck, P.~Schwabe, G.~Seiler, D.~Stehl\'e. CRYSTALS-Kyber: a CCA-secure module-lattice-based KEM. EuroS\&P 2018.
+\bibitem{CJL16} J.~H.~Cheon, J.~Jeong, C.~Lee. An algorithm for NTRU problems and cryptanalysis of the GGH multilinear map without a low-level encoding of zero. LMS J.\ Comput.\ Math.\ 19(A), 2016.
+\bibitem{CDPR16} R.~Cramer, L.~Ducas, C.~Peikert, O.~Regev. Recovering short generators of principal ideals in cyclotomic rings. EUROCRYPT 2016.
+\bibitem{CDW17} R.~Cramer, L.~Ducas, B.~Wesolowski. Short Stickelberger class relations and application to Ideal-SVP. EUROCRYPT 2017.
+\bibitem{HHK17} D.~Hofheinz, K.~H\"ovelmanns, E.~Kiltz. A modular analysis of the Fujisaki--Okamoto transformation. TCC 2017.
+\bibitem{LPR13} V.~Lyubashevsky, C.~Peikert, O.~Regev. On ideal lattices and learning with errors over rings. J.\ ACM 60(6), 2013.
+\bibitem{FIPS203} NIST. FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard. 2024.
+\end{thebibliography}
 \end{document}
