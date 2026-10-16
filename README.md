@@ -1,203 +1,61 @@
-# CLH MAX KEM
+# CLH-MAX
 
-**A Post-Quantum Key Encapsulation Mechanism over Z_q[X]/Φ₂₅₇(X) with Machine-Checked Security**
+A research proposal for a lattice-based key encapsulation mechanism (KEM) in the style of
+Kyber/ML-KEM, using the prime cyclotomic ring `Z_q[X]/Φ_257(X)` instead of `Z_q[X]/(X^256+1)`.
+For `q = 3329` the polynomial `Φ_257` is irreducible, so the ring is the field `F_{q^256}`.
 
-> Santiago López Heinzen — October 2026  
-> Zenodo: <https://doi.org/10.5281/zenodo.22883946>
+**Status:** research proposal, not standardized, not implemented for production use.
+No claim is made that CLH-MAX is more secure than ML-KEM.
 
-[![License: AGPL v3](https://img.shields.io/badge/Code-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![License: CC BY 4.0](https://img.shields.io/badge/Paper-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+Author: Santiago López Heinzen — lopezantiago79@gmail.com
 
----
+## What is in this repository
 
-## Overview
+- `main.tex` / `paper/` — the paper (version 2).
+- `ClhMaxSecurity.lean` — Lean 4 / Mathlib proof of the game-hopping reduction
+  (see below for exactly what it proves).
+- `scripts/dfp.py` — exact decryption-failure probability computation.
+- `scripts/estimate_clh_max.py` — lattice-estimator runs for CLH-MAX and ML-KEM
+  (same call, same cost model).
+- `results/` — raw lattice-estimator output.
+- `ERRATA.md` — corrections relative to version 1. **Version 2 supersedes version 1.**
 
-CLH MAX is a post-quantum KEM whose central algebraic novelty is the use of
-the **Fermat prime cyclotomic polynomial Φ₂₅₇(X)** as the ring modulus.
+## What the Lean file proves (and what it does not)
 
-For primes q with ord₂₅₇(q) = 256 (including q = 3329 and q = 12289),
-Φ₂₅₇ is **irreducible** over Z_q, making
+It proves, for any ring `R`, any distributions `unif` (translation-invariant, e.g. uniform)
+and `noise`, and any adversary `A`:
 
-```
-R_q = Z_q[X]/Φ₂₅₇(X)  ≅  F_{q^256}
-```
+`advIND ≤ (eps1 true + eps2 true) + (eps1 false + eps2 false)`
 
-a single finite field. This eliminates the subfield decomposition present
-in Kyber/ML-KEM (where X²⁵⁶+1 splits into 256 linear factors), removing
-the attack surface exploited by subfield attacks (Cheon et al. 2016).
+where `eps1`, `eps2` are the advantages of two explicit distinguishers against (Ring-)LWE
+with one and two samples. It uses no hardness axiom and no `sorry`; `#print axioms` reports
+only `propext`, `Classical.choice`, `Quot.sound`.
 
----
+It does **not** formalise hardness of (M)LWE, running times, or the module case `k > 1`
+(only `k = 1` is formalised).
 
-## Key Properties
-
-| Property | CLH MAX | ML-KEM (Kyber) |
-|---|---|---|
-| Ring modulus | Φ₂₅₇(X) — **irreducible** | X²⁵⁶+1 — splits into 256 factors |
-| Ring structure | Single field F_{q²⁵⁶} | Product of 256 copies of F_q |
-| qO_K factorisation | **1 prime ideal** (inert) | 256 prime ideals (split) |
-| Subfield attacks | **Do not apply ✓** | Applicable ✗ |
-| Security Level 1 (cl/qu) | **2¹³².⁸ / 2¹²¹** | 2¹¹⁸ / 2¹⁰⁷ |
-| Security Level 3 (cl/qu) | **2¹⁹⁶.⁴ / 2¹⁷⁸** | 2¹⁸³ / 2¹⁶⁶ |
-| Security Level 5 (cl/qu) | **2²⁶².³ / 2²³⁸** | 2²⁴⁷ / 2²²⁴ |
-| Key/ct sizes | **Identical to ML-KEM** | — |
-| IND-CPA formal proof | **Lean 4: 1 axiom, 0 sorry ✓** | Partial (EasyCrypt) |
-| IND-CCA2 | ✓ FO-T transform | ✓ FIPS 203 |
-| Arithmetic overhead | ~2.25× vs ML-KEM | 1× (reference) |
-
----
-
-## Concrete Security (Lattice-Estimator, Albrecht et al.)
-
-All values computed with the official lattice-estimator (q = 3329, η = 2):
-
-| Scheme | BKW | uSVP | BDD | Dual | Dual Hybrid | **Worst** | β | NIST |
-|---|---|---|---|---|---|---|---|---|
-| CLH-MAX-256 (base ring) | 95.8 | 73.1 | 70.5 | 75.4 | 71.9 | **70.5** | 141 | < L1 |
-| Module-CLH-MAX k=2 (n=512) | 167.2 | 137.1 | 133.7 | 142.6 | 132.8 | **132.8** | 363 | L1 ✓ |
-| Module-CLH-MAX k=3 (n=768) | 238.3 | 204.9 | 201.0 | 214.3 | 196.4 | **196.4** | 589 | L3 ✓ |
-| Module-CLH-MAX k=4 (n=1024) | 315.0 | 275.1 | 270.7 | 288.5 | 262.3 | **262.3** | 823 | L5 ✓ |
-
-Dominant attack: **dual hybrid (MATZOV 2022)**.  
-CLH MAX exceeds ML-KEM by **+14.8 bits (L1)**, **+13.4 bits (L3)**, **+15.3 bits (L5)**.
-
----
-
-## Hardness Foundation
-
-Theorem 4.10 establishes the reduction chain with explicit constants:
+Built with Lean `v4.35.0` and Mathlib `v4.35.0`:
 
 ```
-ideal-SIVP_γ(O_K)  →  D-RLWE_{256, 3329, ψ₂}(Z_3329[X]/Φ₂₅₇(X))
-```
-
-with explicit approximation factor:
-
-```
-γ = √2 · n · (q/B) = √2 · 256 · (3329/2) ≈ 602,613 ≈ 2^19.2
-```
-
-Five conditions explicitly verified (C1)–(C5):
-
-- **C1:** n = 256 = 2⁸ (Peikert 2009 smoothness hypothesis)
-- **C2:** k = 257 prime
-- **C3:** ord₂₅₇(3329) = 256 → qO_K is a prime ideal
-- **C4:** q = 3329 ≥ 2√n·B = 64 (LPR 2013, Theorem 4.1)
-- **C5:** α = 2/3329 ≤ 1/(√2·n) (noise rate within valid range)
-
----
-
-## Lean 4 Formalization
-
-**File:** `ClhMaxSecurity.lean`  
-**Namespace:** `ClhMax`  
-**Axiom count: 1** (`drlwe_hardness`)  
-**Sorry count: 0**
-
-| Component | Type | Status |
-|---|---|---|
-| `drlwe_hardness` | axiom | **SOLE AXIOM** |
-| `[Field Rq]` | instance | GIVEN (Φ₂₅₇ irred.) |
-| `mul_uniform_eq` | theorem | ✓ proved |
-| `B1`, `B2` | definitions | ✓ |
-| `B1_real_eq_Game0` | lemma | ✓ proved |
-| `B1_unif_eq_Game1` | lemma | ✓ proved |
-| `Adv_B1_eq` | lemma | ✓ proved |
-| `B2_real_eq_Game1` | lemma | ✓ proved |
-| `B2_unif_eq_Game2` | lemma | ✓ proved |
-| `Adv_B2_eq` | lemma | ✓ proved |
-| `Game0_false_eq_Game2` | lemma | ✓ proved |
-| `Adv_INDCPA_eq_game_diff` | lemma | ✓ proved |
-| `clh_max_indcpa_security` | **theorem** | ✓ **0 sorry** |
-| `clh_max_indcpa_zero` | corollary | ✓ **0 sorry** |
-
----
-
-## Building
-
-### Requirements
-
-- Lean 4 v4.14.0 (see `lean-toolchain`)
-- Mathlib v4.14.0
-
-### Steps
-
-```bash
-# Clone the repository
-git clone https://github.com/<your-user>/clh-max-kem
-cd clh-max-kem
-
-# Install elan (Lean version manager) if needed
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
-
-# Download Mathlib cache (avoids compiling Mathlib from scratch)
 lake exe cache get
-
-# Build
 lake build
-
-# Check the main file
-lake env lean ClhMaxSecurity.lean
 ```
 
-Expected output: no errors, no warnings about `sorry`.
+## Main results (see the paper for details)
 
----
+- IND-CPA security reduces to two decision-MLWE instances (paper proof; Lean for `k = 1`).
+- Decryption failure probability (no compression, `q = 3329`, `η = 2`):
+  `k = 2`: 2^-231, `k = 3`: 2^-156, `k = 4`: 2^-117 — the `k = 4` set does **not** reach 2^-128.
+- Generic MLWE estimates (lattice-estimator): identical to ML-KEM-768/1024 for `k = 3, 4`
+  (same `(n, q, noise)`), and about 7 bits lower than ML-KEM-512 for `k = 2` with `η = 2`.
+- No negacyclic NTT at `q = 3329`; no performance claim is made.
 
-## Repository Structure
+## Open problems
 
-```
-clh-max-kem/
-├── ClhMaxSecurity.lean   # Complete Lean 4 formalization (AGPL-3.0)
-├── lakefile.lean         # Lake build configuration
-├── lean-toolchain        # Lean version pin
-├── LICENSE               # AGPL-3.0 (code)
-├── LICENSE-paper.md      # CC BY 4.0 (manuscript)
-└── README.md             # This file
-```
-
----
-
-## Parameter Sets
-
-| Scheme | k | n_eff | q | η | pk | sk | ct | Worst case | NIST Level |
-|---|---|---|---|---|---|---|---|---|---|
-| M-CLH-MAX-512 | 2 | 512 | 3329 | 2 | 800 B | 1600 B | 768 B | 2¹³².⁸ | Level 1 |
-| M-CLH-MAX-768 | 3 | 768 | 3329 | 2 | 1184 B | 2400 B | 1088 B | 2¹⁹⁶.⁴ | Level 3 |
-| M-CLH-MAX-1024 | 4 | 1024 | 3329 | 2 | 1568 B | 3168 B | 1568 B | 2²⁶².³ | Level 5 |
-
-Key and ciphertext sizes are **identical to ML-KEM** at each security level.
-
----
-
-## Citation
-
-```bibtex
-@misc{clhmax2026,
-  author       = {López Heinzen, Santiago},
-  title        = {{CLH MAX}: A Post-Quantum Key Encapsulation Mechanism
-                  over $\mathbb{Z}_q[X]/\Phi_{257}(X)$
-                  with Machine-Checked Security},
-  year         = {2026},
-  doi          = {10.5281/zenodo.22943292},
-  url          = {https://doi.org/10.5281/zenodo.22883946},
-  note         = {Lean 4 formalization: 1 axiom, 0 sorry.
-                  Code: AGPL-3.0. Paper: CC BY 4.0.}
-}
-```
-
----
+Parameter sets meeting both `δ < 2^-128` and ML-KEM-level security at `k = 2, 4`;
+estimation of the message-recovery instance; efficient implementation; algebraic
+consequences of the field structure of the ring.
 
 ## License
 
-This repository uses **two separate licenses**:
-
-| Component | Files | License |
-|---|---|---|
-| Lean 4 code | `ClhMaxSecurity.lean`, `lakefile.lean` | **AGPL-3.0** |
-| Academic manuscript | `main.tex`, `main_es.tex`, PDF | **CC BY 4.0** |
-
-The AGPL-3.0 license ensures that any modification to the cryptographic
-code — including use in network services — must be published as open source,
-allowing the community to audit any variant of the scheme.
-
-Full license texts: `LICENSE` (code) and `LICENSE-paper.md` (manuscript).
+See `LICENSE` (code) and `LICENSE-paper.md` (paper).
