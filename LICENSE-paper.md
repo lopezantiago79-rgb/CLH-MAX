@@ -26,12 +26,14 @@ GNU Affero General Public License v3.0; see `LICENSE`.
 
 ```bibtex
 @misc{clhmax2026,
-  author = {López Heinzen, Santiago},
-  title  = {{CLH-MAX}: A Lattice-Based KEM Proposal over the Prime Cyclotomic Ring
-            $\mathbb{Z}_q[X]/\Phi_{257}(X)$},
-  year   = {2026},
-  doi    = {10.5281/zenodo.22943292},
-  url    = {https://doi.org/10.5281/zenodo.22943292},
-  note   = {Version 2. Code licensed under AGPL-3.0. Paper licensed under CC BY 4.0.}
+  author  = {López Heinzen, Santiago},
+  title   = {{CLH-MAX}: A Lattice-Based KEM Proposal over the Prime Cyclotomic Ring
+             $\mathbb{Z}_q[X]/\Phi_{257}(X)$},
+  year    = {2026},
+  version = {2.0.0},
+  doi     = {10.5281/zenodo.23428067},
+  url     = {https://doi.org/10.5281/zenodo.23428067},
+  note    = {Code licensed under AGPL-3.0. Paper licensed under CC BY 4.0.
+             All versions: https://doi.org/10.5281/zenodo.22883946}
 }
 ```
