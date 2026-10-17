@@ -68,5 +68,10 @@ This repository is dual-licensed:
 ## How to cite
 
 Santiago López Heinzen, *CLH-MAX: A Lattice-Based KEM Proposal over the Prime Cyclotomic
-Ring Z_q[X]/Φ_257(X)*, 2026. Zenodo: https://doi.org/10.5281/zenodo.22943292
-(the DOI will be updated to the version 2 record).
+Ring Z_q[X]/Φ_257(X)*, version 2.0.0, 2026.
+Zenodo: https://doi.org/10.5281/zenodo.23428067
+
+All versions (always resolves to the latest): https://doi.org/10.5281/zenodo.22883946
+
+Earlier Zenodo versions (v1 to 1.6) contain the previous version of this work, whose claims
+are withdrawn; see `ERRATA.md`.
