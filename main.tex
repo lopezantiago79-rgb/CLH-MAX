@@ -170,9 +170,16 @@ $\delta$ & $<2^{-128}$ for $k=2,3$; $\approx2^{-117}$ for $k=4$ & see FIPS 203\\
 \end{table}
 
 \section{Artifact availability}
-% >>> CAMBIAR AQUI: cuando tengas el DOI nuevo de Zenodo, reemplazar el DOI y borrar la frase
-% >>> que dice que el deposito corresponde a una version anterior.
-A Lean~4 development accompanied an earlier version of this work and is deposited at \url{https://doi.org/10.5281/zenodo.22943292}. That deposit corresponds to the earlier version and must not be read as verifying the statements of the present paper; it will be updated to match Theorem~\ref{thm:cpa} (two hybrid hops with $k$ and $k+1$ samples, no unconditional-hardness axiom). The scripts of Appendix~\ref{app:script} are the reproducible parts of this version.
+The source files of this version (\LaTeX{} source, the Lean~4 development, the scripts of Appendix~\ref{app:script} and the raw estimator output) are archived on Zenodo:
+\begin{itemize}[nosep]
+\item version 2.0.0 (this paper): \url{https://doi.org/10.5281/zenodo.23428067}
+\item all versions (always resolves to the latest): \url{https://doi.org/10.5281/zenodo.22883946}
+\end{itemize}
+Earlier Zenodo versions (v1 to 1.6) contain the previous version of this work, whose claims are withdrawn; see the file \texttt{ERRATA.md} in the repository.
+
+The file \texttt{ClhMaxSecurity.lean} compiles against Mathlib v4.35.0 and formalises the game-hopping inequality underlying Theorem~\ref{thm:cpa} for one ring component ($k=1$): the left-or-right IND-CPA advantage is bounded by the sum of the advantages of four explicit distinguishers against (Ring-)LWE with one and two samples. It uses no hardness axiom and no \texttt{sorry}; \texttt{\#print axioms} reports only \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}. It does not formalise the hardness of (M)LWE, running times, or the module case $k>1$.
+
+The file \texttt{ClhMaxSecurity.lean} compiles against Mathlib v4.35.0 and formalises the game-hopping inequality underlying Theorem~\ref{thm:cpa} for one ring component ($k=1$): the left-or-right IND-CPA advantage is bounded by the sum of the advantages of four explicit distinguishers against (Ring-)LWE with one and two samples. It uses no hardness axiom and no \texttt{sorry}; \texttt{\#print axioms} reports only \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}. It does not formalise the hardness of (M)LWE, running times, or the module case $k>1$.
 
 \section{Open problems}
 (i) Choose $k=2$ and $k=4$ parameters that meet both $\delta<2^{-128}$ and ML-KEM-level security (the extra terms per product coefficient in $\Rq$ cost correctness; ciphertext compression, an error-correcting message encoding or a different modulus are candidates). (ii) Estimate the message-recovery instance as well as key recovery. (iii) Efficient implementation at $q=3329$. (iv) Study whether the field structure and the order-$256$ Galois action of $\Rq$ give any algebraic leverage against MLWE. (v) A machine-checked proof of Theorem~\ref{thm:cpa}.
