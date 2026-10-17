@@ -1,0 +1,89 @@
+# lattice-estimator output (raw, unmodified)
+# Date: October 2026
+# Instances: CLH-MAX-512/768/1024 and ML-KEM-512/768/1024, q = 3329, m = n
+# Call: see scripts/estimate_clh_max.py (LWE.estimate, same call for all instances)
+# Estimator version/commit: unknown
+CLH-MAX-512
+
+bkw                  :: rop: ≈2^167.2, m: ≈2^155.1, mem: ≈2^156.1, b: 13, t1: 0, t2: 16, ℓ: 12, #cod: 444, #top: 1, #test: 67, tag: coded-bkw
+
+usvp                 :: rop: ≈2^137.1, red: ≈2^137.1, δ: 1.004111, β: 382, d: 973, tag: usvp
+
+bdd                  :: rop: ≈2^133.7, red: ≈2^132.7, svp: ≈2^132.6, β: 366, η: 398, d: 974, tag: bdd
+
+dual                 :: rop: ≈2^142.6, mem: ≈2^91.9, m: 509, β: 398, d: 1021, ↻: 1, tag: dual
+
+dual_hybrid          :: rop: ≈2^132.8, red: ≈2^132.8, guess: ≈2^121.9, β: 363, p: 4, ζ: 10, t: 40, β': 368, N: ≈2^75.6, m: 512
+
+{'arora-gb': rop: ≈2^inf, 'bkw': rop: ≈2^167.2, m: ≈2^155.1, mem: ≈2^156.1, b: 13, t1: 0, t2: 16, ℓ: 12, #cod: 444, #top: 1, #test: 67, tag: coded-bkw, 'usvp': rop: ≈2^137.1, red: ≈2^137.1, δ: 1.004111, β: 382, d: 973, tag: usvp, 'bdd': rop: ≈2^133.7, red: ≈2^132.7, svp: ≈2^132.6, β: 366, η: 398, d: 974, tag: bdd, 'bdd_hybrid': rop: ≈2^133.7, red: ≈2^132.7, svp: ≈2^132.6, β: 366, η: 398, ζ: 0, |S|: 1, d: 992, prob: 1.0, ↻: 1, tag: hybrid, 'bdd_mitm_hybrid': rop: ≈2^226.0, red: ≈2^221.8, svp: ≈2^226.0, β: 383, η: 2, ζ: 121, |S|: ≈2^243.5, d: 880, prob: ≈2^-82.4, ↻: ≈2^84.7, tag: hybrid, 'dual': rop: ≈2^142.6, mem: ≈2^91.9, m: 509, β: 398, d: 1021, ↻: 1, tag: dual, 'dual_hybrid': rop: ≈2^132.8, red: ≈2^132.8, guess: ≈2^121.9, β: 363, p: 4, ζ: 10, t: 40, β': 368, N: ≈2^75.6, m: 512}
+
+CLH-MAX-768
+
+bkw                  :: rop: ≈2^238.3, m: ≈2^225.5, mem: ≈2^226.5, b: 19, t1: 1, t2: 17, ℓ: 18, #cod: 653, #top: 1, #test: 95, tag: coded-bkw
+
+usvp                 :: rop: ≈2^204.9, red: ≈2^204.9, δ: 1.002902, β: 624, d: 1427, tag: usvp
+
+bdd                  :: rop: ≈2^201.0, red: ≈2^199.9, svp: ≈2^200.0, β: 606, η: 640, d: 1420, tag: bdd
+
+dual                 :: rop: ≈2^214.3, mem: ≈2^142.8, m: 724, β: 654, d: 1492, ↻: 1, tag: dual
+
+dual_hybrid          :: rop: ≈2^196.4, red: ≈2^196.4, guess: ≈2^185.8, β: 589, p: 4, ζ: 20, t: 60, β': 583, N: ≈2^119.8, m: 768
+
+{'arora-gb': rop: ≈2^inf, 'bkw': rop: ≈2^238.3, m: ≈2^225.5, mem: ≈2^226.5, b: 19, t1: 1, t2: 17, ℓ: 18, #cod: 653, #top: 1, #test: 95, tag: coded-bkw, 'usvp': rop: ≈2^204.9, red: ≈2^204.9, δ: 1.002902, β: 624, d: 1427, tag: usvp, 'bdd': rop: ≈2^201.0, red: ≈2^199.9, svp: ≈2^200.0, β: 606, η: 640, d: 1420, tag: bdd, 'bdd_hybrid': rop: ≈2^201.0, red: ≈2^200.0, svp: ≈2^200.0, β: 606, η: 640, ζ: 0, |S|: 1, d: 1451, prob: 1.0, ↻: 1, tag: hybrid, 'bdd_mitm_hybrid': rop: ≈2^358.2, red: ≈2^332.9, svp: ≈2^358.2, β: 625, η: 2, ζ: 209, |S|: ≈2^419.2, d: 1252, prob: ≈2^-125.9, ↻: ≈2^128.1, tag: hybrid, 'dual': rop: ≈2^214.3, mem: ≈2^142.8, m: 724, β: 654, d: 1492, ↻: 1, tag: dual, 'dual_hybrid': rop: ≈2^196.4, red: ≈2^196.4, guess: ≈2^185.8, β: 589, p: 4, ζ: 20, t: 60, β': 583, N: ≈2^119.8, m: 768}
+
+CLH-MAX-1024
+
+bkw                  :: rop: ≈2^315.0, m: ≈2^301.0, mem: ≈2^296.7, b: 25, t1: 0, t2: 18, ℓ: 24, #cod: 897, #top: 0, #test: 129, tag: coded-bkw
+
+usvp                 :: rop: ≈2^275.1, red: ≈2^275.1, δ: 1.002262, β: 874, d: 1867, tag: usvp
+
+bdd                  :: rop: ≈2^270.7, red: ≈2^269.8, svp: ≈2^269.6, β: 855, η: 889, d: 1867, tag: bdd
+
+dual                 :: rop: ≈2^288.5, mem: ≈2^195.3, m: 930, β: 918, d: 1954, ↻: 1, tag: dual
+
+dual_hybrid          :: rop: ≈2^262.3, red: ≈2^261.9, guess: ≈2^260.3, β: 823, p: 4, ζ: 0, t: 120, β': 804, N: ≈2^165.9, m: 1024
+
+{'arora-gb': rop: ≈2^inf, 'bkw': rop: ≈2^315.0, m: ≈2^301.0, mem: ≈2^296.7, b: 25, t1: 0, t2: 18, ℓ: 24, #cod: 897, #top: 0, #test: 129, tag: coded-bkw, 'usvp': rop: ≈2^275.1, red: ≈2^275.1, δ: 1.002262, β: 874, d: 1867, tag: usvp, 'bdd': rop: ≈2^270.7, red: ≈2^269.8, svp: ≈2^269.6, β: 855, η: 889, d: 1867, tag: bdd, 'bdd_hybrid': rop: ≈2^270.7, red: ≈2^269.9, svp: ≈2^269.6, β: 855, η: 889, ζ: 0, |S|: 1, d: 1902, prob: 1.0, ↻: 1, tag: hybrid, 'bdd_mitm_hybrid': rop: ≈2^495.9, red: ≈2^439.2, svp: ≈2^495.9, β: 875, η: 2, ζ: 307, |S|: ≈2^620.7, d: 1606, prob: ≈2^-162.1, ↻: ≈2^164.3, tag: hybrid, 'dual': rop: ≈2^288.5, mem: ≈2^195.3, m: 930, β: 918, d: 1954, ↻: 1, tag: dual, 'dual_hybrid': rop: ≈2^262.3, red: ≈2^261.9, guess: ≈2^260.3, β: 823, p: 4, ζ: 0, t: 120, β': 804, N: ≈2^165.9, m: 1024}
+
+ML-KEM-512
+
+bkw                  :: rop: ≈2^178.8, m: ≈2^166.8, mem: ≈2^167.8, b: 14, t1: 0, t2: 16, ℓ: 13, #cod: 448, #top: 0, #test: 64, tag: coded-bkw
+
+usvp                 :: rop: ≈2^143.8, red: ≈2^143.8, δ: 1.003941, β: 406, d: 998, tag: usvp
+
+bdd                  :: rop: ≈2^140.2, red: ≈2^139.1, svp: ≈2^139.3, β: 389, η: 422, d: 1005, tag: bdd
+
+dual                 :: rop: ≈2^149.9, mem: ≈2^97.1, m: 512, β: 424, d: 1024, ↻: 1, tag: dual
+
+dual_hybrid          :: rop: ≈2^139.7, red: ≈2^139.5, guess: ≈2^135.9, β: 387, p: 5, ζ: 0, t: 50, β': 391, N: ≈2^81.1, m: 512
+
+{'arora-gb': rop: ≈2^inf, 'bkw': rop: ≈2^178.8, m: ≈2^166.8, mem: ≈2^167.8, b: 14, t1: 0, t2: 16, ℓ: 13, #cod: 448, #top: 0, #test: 64, tag: coded-bkw, 'usvp': rop: ≈2^143.8, red: ≈2^143.8, δ: 1.003941, β: 406, d: 998, tag: usvp, 'bdd': rop: ≈2^140.2, red: ≈2^139.1, svp: ≈2^139.3, β: 389, η: 422, d: 1005, tag: bdd, 'bdd_hybrid': rop: ≈2^140.2, red: ≈2^139.1, svp: ≈2^139.3, β: 389, η: 422, ζ: 0, |S|: 1, d: 1013, prob: 1.0, ↻: 1, tag: hybrid, 'bdd_mitm_hybrid': rop: ≈2^262.1, red: ≈2^254.0, svp: ≈2^262.1, β: 407, η: 2, ζ: 111, |S|: ≈2^264.5, d: 911, prob: ≈2^-108.0, ↻: ≈2^110.2, tag: hybrid, 'dual': rop: ≈2^149.9, mem: ≈2^97.1, m: 512, β: 424, d: 1024, ↻: 1, tag: dual, 'dual_hybrid': rop: ≈2^139.7, red: ≈2^139.5, guess: ≈2^135.9, β: 387, p: 5, ζ: 0, t: 50, β': 391, N: ≈2^81.1, m: 512}
+
+ML-KEM-768
+
+bkw                  :: rop: ≈2^238.3, m: ≈2^225.5, mem: ≈2^226.5, b: 19, t1: 1, t2: 17, ℓ: 18, #cod: 653, #top: 1, #test: 95, tag: coded-bkw
+
+usvp                 :: rop: ≈2^204.9, red: ≈2^204.9, δ: 1.002902, β: 624, d: 1427, tag: usvp
+
+bdd                  :: rop: ≈2^201.0, red: ≈2^199.9, svp: ≈2^200.0, β: 606, η: 640, d: 1420, tag: bdd
+
+dual                 :: rop: ≈2^214.3, mem: ≈2^142.8, m: 724, β: 654, d: 1492, ↻: 1, tag: dual
+
+dual_hybrid          :: rop: ≈2^196.4, red: ≈2^196.4, guess: ≈2^185.8, β: 589, p: 4, ζ: 20, t: 60, β': 583, N: ≈2^119.8, m: 768
+
+{'arora-gb': rop: ≈2^inf, 'bkw': rop: ≈2^238.3, m: ≈2^225.5, mem: ≈2^226.5, b: 19, t1: 1, t2: 17, ℓ: 18, #cod: 653, #top: 1, #test: 95, tag: coded-bkw, 'usvp': rop: ≈2^204.9, red: ≈2^204.9, δ: 1.002902, β: 624, d: 1427, tag: usvp, 'bdd': rop: ≈2^201.0, red: ≈2^199.9, svp: ≈2^200.0, β: 606, η: 640, d: 1420, tag: bdd, 'bdd_hybrid': rop: ≈2^201.0, red: ≈2^200.0, svp: ≈2^200.0, β: 606, η: 640, ζ: 0, |S|: 1, d: 1451, prob: 1.0, ↻: 1, tag: hybrid, 'bdd_mitm_hybrid': rop: ≈2^358.2, red: ≈2^332.9, svp: ≈2^358.2, β: 625, η: 2, ζ: 209, |S|: ≈2^419.2, d: 1252, prob: ≈2^-125.9, ↻: ≈2^128.1, tag: hybrid, 'dual': rop: ≈2^214.3, mem: ≈2^142.8, m: 724, β: 654, d: 1492, ↻: 1, tag: dual, 'dual_hybrid': rop: ≈2^196.4, red: ≈2^196.4, guess: ≈2^185.8, β: 589, p: 4, ζ: 20, t: 60, β': 583, N: ≈2^119.8, m: 768}
+
+ML-KEM-1024
+
+bkw                  :: rop: ≈2^315.0, m: ≈2^301.0, mem: ≈2^296.7, b: 25, t1: 0, t2: 18, ℓ: 24, #cod: 897, #top: 0, #test: 129, tag: coded-bkw
+
+usvp                 :: rop: ≈2^275.1, red: ≈2^275.1, δ: 1.002262, β: 874, d: 1867, tag: usvp
+
+bdd                  :: rop: ≈2^270.7, red: ≈2^269.8, svp: ≈2^269.6, β: 855, η: 889, d: 1867, tag: bdd
+
+dual                 :: rop: ≈2^288.5, mem: ≈2^195.3, m: 930, β: 918, d: 1954, ↻: 1, tag: dual
+
+dual_hybrid          :: rop: ≈2^262.3, red: ≈2^261.9, guess: ≈2^260.3, β: 823, p: 4, ζ: 0, t: 120, β': 804, N: ≈2^165.9, m: 1024
+
+{'arora-gb': rop: ≈2^inf, 'bkw': rop: ≈2^315.0, m: ≈2^301.0, mem: ≈2^296.7, b: 25, t1: 0, t2: 18, ℓ: 24, #cod: 897, #top: 0, #test: 129, tag: coded-bkw, 'usvp': rop: ≈2^275.1, red: ≈2^275.1, δ: 1.002262, β: 874, d: 1867, tag: usvp, 'bdd': rop: ≈2^270.7, red: ≈2^269.8, svp: ≈2^269.6, β: 855, η: 889, d: 1867, tag: bdd, 'bdd_hybrid': rop: ≈2^270.7, red: ≈2^269.9, svp: ≈2^269.6, β: 855, η: 889, ζ: 0, |S|: 1, d: 1902, prob: 1.0, ↻: 1, tag: hybrid, 'bdd_mitm_hybrid': rop: ≈2^495.9, red: ≈2^439.2, svp: ≈2^495.9, β: 875, η: 2, ζ: 307, |S|: ≈2^620.7, d: 1606, prob: ≈2^-162.1, ↻: ≈2^164.3, tag: hybrid, 'dual': rop: ≈2^288.5, mem: ≈2^195.3, m: 930, β: 918, d: 1954, ↻: 1, tag: dual, 'dual_hybrid': rop: ≈2^262.3, red: ≈2^261.9, guess: ≈2^260.3, β: 823, p: 4, ζ: 0, t: 120, β': 804, N: ≈2^165.9, m: 1024} 
+
