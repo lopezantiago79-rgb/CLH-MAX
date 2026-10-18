@@ -1,4 +1,6 @@
-# CLH-MAX — Errata and changelog (v1 → v2)
+# CLH-MAX — Errata and changelog
+
+## v1 → v2.0.0
 
 Version 1 of the manuscript and of `ClhMaxSecurity.lean` (Zenodo 10.5281/zenodo.22943292)
 contained errors. They are listed here for transparency. **Version 2 supersedes version 1.**
@@ -30,3 +32,20 @@ contained errors. They are listed here for transparency. **Version 2 supersedes 
 * `scripts/dfp.py` — exact decryption-failure computation.
 * `scripts/estimate_clh_max.py` and `results/estimator_output_<date>.txt` — estimator runs
   (record the estimator commit hash in the results file).
+
+## v2.0.0 → v2.0.1
+
+1. **Modulus per module rank.** Version 2.0.0 used `q = 3329` for all ranks. With the exact
+   decryption-failure computation, the rank-4 set at `q = 3329` has δ ≈ 2^-117 (does not reach
+   2^-128). Version 2.0.1 uses `q = 2531` (k = 2), `q = 3329` (k = 3), `q = 3557` (k = 4), all
+   with δ ≤ 2^-133 (independence heuristic).
+2. **Message-recovery instance.** Version 2.0.0 estimated only key recovery. For ML-KEM-512 the
+   message-recovery instance is the weakest (dual hybrid 2^136.6 vs 2^139.7), so the earlier
+   statement that CLH-MAX-512 (η = 2, q = 3329) was ~7 bits weaker than ML-KEM-512 is replaced:
+   CLH-MAX-512 (q = 2531) is within 0.2 bits of the weakest ML-KEM-512 instance; CLH-MAX-1024
+   (q = 3557) is about 1.9 bits below ML-KEM-1024.
+3. **Introduction.** Removed the incorrect statement that NTRU Prime uses prime-conductor
+   cyclotomic rings (its ring is `Z[x]/(x^p - x - 1)`). Added Round5 as prior use of prime-conductor
+   cyclotomic rings; no novelty is claimed for the ring.
+4. **Scripts.** `scripts/dfp.py` now takes `q` as a parameter; added
+   `scripts/estimate_candidates.py` and `scripts/estimate_message_recovery.py`.
