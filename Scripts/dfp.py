@@ -19,7 +19,8 @@ def conv_pow(p, off, m):
         m >>= 1
         if m: base = np.convolve(base, base); boff *= 2
     return res, roff
-def delta(k, eta1, eta2, thr=832):        # thr = floor(q/4), q = 3329
+def delta(k, eta1, eta2, q):
+    thr = q // 4
     pa, oa = prod_pmf(eta1, eta1); pb, ob = prod_pmf(eta1, eta2)
     d1, o1 = conv_pow(pa, oa, k*511); d2, o2 = conv_pow(pb, ob, k*511)
     d, o = np.convolve(d1, d2), o1 + o2
@@ -27,5 +28,6 @@ def delta(k, eta1, eta2, thr=832):        # thr = floor(q/4), q = 3329
     idx = np.arange(len(d)) - o
     t = d[np.abs(idx) >= thr].sum()
     return log2(t), log2(t) + 8           # per coefficient, union over 256
-for k, e1, e2 in [(2,2,2), (3,2,2), (4,2,2), (2,3,2)]:
-    print(k, e1, e2, delta(k, e1, e2))
+if __name__ == "__main__":
+    for k, e1, e2, q in [(2,2,2,2531), (3,2,2,3329), (4,2,2,3557), (4,2,2,3329)]:
+        print(k, e1, e2, q, delta(k, e1, e2, q))
