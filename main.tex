@@ -15,22 +15,24 @@
 \author{Santiago L\'opez Heinzen\\
 Independent researcher\\
 \texttt{lopezantiago79@gmail.com}}
-\date{October 2026}
+\date{October 2026 (version 2.0.1)}
 \begin{document}
 \maketitle
 \begin{abstract}
-We propose CLH-MAX, a Module-LWE-based key encapsulation mechanism (KEM) in the style of Kyber/ML-KEM in which the ring $\Z_q[X]/(X^{256}+1)$ is replaced by $\Rq=\Z_q[X]/\Phi_{257}(X)$, the ring of the prime cyclotomic field $\mathbb{Q}(\zeta_{257})$. For $q=3329$ the polynomial $\Phi_{257}$ is irreducible modulo $q$, so $\Rq\cong\F_{q^{256}}$ is a field. We specify the CPA-secure public-key encryption layer, its Fujisaki--Okamoto transform to an IND-CCA2 KEM (random-oracle model), and three parameter sets of module rank $2,3,4$. We give a game-hopping proof that IND-CPA security reduces to the decision Module-LWE problem over $\Rq$, an exact analysis of the decryption failure probability (which corrects the na\"ive coefficient-variance count for this ring), lattice-estimator outputs for the generic MLWE instances underlying the parameter sets (identical to those of ML-KEM-768/1024 for $k=3,4$, as expected, and about $7$ bits lower for $k=2$ when $\eta=2$ is used), and a discussion of arithmetic cost, where the absence of a negacyclic NTT is the main disadvantage. We make no claim of higher concrete security than ML-KEM; the contribution is a fully specified alternative ring instantiation together with its correctness and reduction analysis, reproducible scripts, and a clear list of open problems.
+We propose CLH-MAX, a Module-LWE-based key encapsulation mechanism (KEM) in the style of Kyber/ML-KEM in which the ring $\Z_q[X]/(X^{256}+1)$ is replaced by $\Rq=\Z_q[X]/\Phi_{257}(X)$, the ring of the prime cyclotomic field $\mathbb{Q}(\zeta_{257})$. For primes $q$ that are primitive roots modulo $257$ the polynomial $\Phi_{257}$ is irreducible modulo $q$, so $\Rq\cong\F_{q^{256}}$ is a field. We specify the CPA-secure public-key encryption layer, its Fujisaki--Okamoto transform to an IND-CCA2 KEM (random-oracle model), and three parameter sets of module rank $2,3,4$. We give a game-hopping proof that IND-CPA security reduces to the decision Module-LWE problem over $\Rq$, an exact analysis of the decryption failure probability (which corrects the na\"ive coefficient-variance count for this ring and shows that the ML-KEM modulus $q=3329$ is not adequate for rank $4$), a choice of the modulus per module rank so that $\delta<2^{-128}$ for all three sets, lattice-estimator outputs for key- and message-recovery instances (identical to ML-KEM-768 for $k=3$, within $0.2$ bits of the weakest ML-KEM-512 instance for $k=2$, and about $2$ bits below ML-KEM-1024 for $k=4$), and a discussion of arithmetic cost, where the absence of a negacyclic NTT is the main disadvantage. We make no claim of higher concrete security than ML-KEM; the contribution is a fully specified alternative ring instantiation together with its correctness and reduction analysis, reproducible scripts, and a clear list of open problems.
 \end{abstract}
 
+\noindent\textbf{Status.} This is an unrefereed technical note; it has not been peer-reviewed. Its claims are limited to what is proved or computed in the text and in the accompanying scripts.
+
 \section{Introduction}
-ML-KEM (FIPS~203 \cite{FIPS203}) is based on Module-LWE over $\Z_{3329}[X]/(X^{256}+1)$, a power-of-two cyclotomic ring chosen because it admits a fast (incomplete) number-theoretic transform (NTT). The choice of ring in structured-lattice cryptography is a design parameter that is not fully explored: other cyclotomic rings have been proposed, e.g.\ prime-conductor rings in the ring-LWE literature and in NTRU Prime. This note studies one concrete alternative, conductor $257$ (the Fermat prime $F_3=2^8+1$), for which the ring degree is $\varphi(257)=256$, equal to that of ML-KEM, so module ranks, key sizes and noise parameters can be compared directly.
+ML-KEM (FIPS~203 \cite{FIPS203}) is based on Module-LWE over $\Z_{3329}[X]/(X^{256}+1)$, a power-of-two cyclotomic ring chosen because it admits a fast (incomplete) number-theoretic transform (NTT). The choice of ring in structured-lattice cryptography is a design parameter that is not fully explored: other cyclotomic rings have been proposed, e.g.\ the prime-conductor rings $\Z_q[X]/\Phi_{n+1}$ ($n+1$ prime) used in the NIST round-2 candidates Round2 and Round5 \cite{Round5}. This note studies one concrete alternative, conductor $257$ (the Fermat prime $F_3=2^8+1$), for which the ring degree is $\varphi(257)=256$, equal to that of ML-KEM, so module ranks, key sizes and noise parameters can be compared directly.
 
 \paragraph{Contributions.}
-(1) A complete specification of CLH-MAX: PKE, FO-based KEM, three parameter sets (Sections~\ref{sec:ring}--\ref{sec:scheme}). (2) A proof that IND-CPA security reduces to two decision-MLWE instances over $\Rq$, with the explicit simulators (Section~\ref{sec:sec}, Appendix~\ref{app:sim}). (3) An exact computation of the decryption failure probability including the ring-specific coefficient count for $\Phi_{257}$; it shows that the highest parameter set does \emph{not} reach $2^{-128}$ without modification (Section~\ref{sec:dfp}, Appendices~\ref{app:count},\ref{app:script}). (4) A cost analysis of multiplication in $\Rq$ (Section~\ref{sec:arith}).
+(1) A complete specification of CLH-MAX: PKE, FO-based KEM, three parameter sets (Sections~\ref{sec:ring}--\ref{sec:scheme}). (2) A proof that IND-CPA security reduces to two decision-MLWE instances over $\Rq$, with the explicit simulators (Section~\ref{sec:sec}, Appendix~\ref{app:sim}). (3) An exact computation of the decryption failure probability including the ring-specific coefficient count for $\Phi_{257}$; it shows that with the ML-KEM modulus $q=3329$ the rank-4 set does \emph{not} reach $2^{-128}$, which we repair by choosing the modulus per rank (Sections~\ref{sec:dfp},\ref{sec:params}, Appendices~\ref{app:count},\ref{app:script}). (4) A cost analysis of multiplication in $\Rq$ (Section~\ref{sec:arith}).
 
 \paragraph{Non-claims.} We do not claim that CLH-MAX is more secure than ML-KEM, that known attacks on ML-KEM fail to apply to a field ring, or that worst-case reductions give concrete security at these parameters. Section~\ref{sec:sec} explains why.
 
-\paragraph{Related work.} Ring-LWE over general cyclotomic rings was introduced in \cite{LPR13}, including the worst-case reduction for arbitrary cyclotomic fields. Kyber \cite{BDKLLSSS18} and ML-KEM use module structure over $\Z_q[X]/(X^{256}+1)$; the module variant over $\Z_q[X]/\Phi_{257}$ studied here follows the same template. Subfield and structural attacks are discussed in \cite{ABD16,CJL16,CDPR16,CDW17}.
+\paragraph{Related work.} Ring-LWE over general cyclotomic rings was introduced in \cite{LPR13}, including the worst-case reduction for arbitrary cyclotomic fields. Kyber \cite{BDKLLSSS18} and ML-KEM use module structure over $\Z_q[X]/(X^{256}+1)$; the module variant over $\Z_q[X]/\Phi_{257}$ studied here follows the same template. Prime-conductor cyclotomic rings were already used in Round5 \cite{Round5}, which is based on ring learning with rounding; we make no claim of novelty for the ring itself. Subfield and structural attacks are discussed in \cite{ABD16,CJL16,CDPR16,CDW17}.
 
 \section{Preliminaries}
 \paragraph{Notation.} $N=256$, $q$ prime, $\Rq=\Z_q[X]/\Phi_{257}(X)$ with $\Phi_{257}=X^{256}+\dots+X+1$. Elements are identified with coefficient vectors in $\Z_q^{256}$. For $k\ge1$, vectors and matrices over $\Rq$ are written with the module rank $k$ as dimension. $\psi_\eta$ is the centered binomial distribution on $\Z$: $\sum_{i=1}^{\eta}(a_i-b_i)$ with $a_i,b_i\leftarrow\{0,1\}$ uniform; it has variance $\eta/2$. For $\eta=2$ the variance is $1$ (we use $\eta=2$ throughout, so $\sigma^2=1$). $\chi$ denotes $\psi_2$ applied coefficient-wise.
@@ -54,7 +56,7 @@ Let $q\ne257$ be prime. Then $\Phi_{257}$ is irreducible over $\F_q$ if and only
 \begin{proof}
 For $\gcd(q,m)=1$ all irreducible factors of $\Phi_m$ over $\F_q$ have degree $\mathrm{ord}_m(q)$; here $\deg\Phi_{257}=\varphi(257)=256$. The statement about $q\mathcal O_K$ is the standard description of inert primes in cyclotomic fields.
 \end{proof}
-Direct computation gives $\mathrm{ord}_{257}(3329)=\mathrm{ord}_{257}(12289)=256$ ($3329\equiv245$ and $12289\equiv210 \pmod{257}$). Among primes $3000<q<20000$ there are $922$ moduli with this property (e.g.\ $3001,3019,3037,3041,\dots$). Not every NTT-friendly prime works: $\mathrm{ord}_{257}(7681)=128$, so $\Phi_{257}$ splits into two factors of degree $128$ modulo $7681$. We use $q=3329$, the ML-KEM modulus.
+Direct computation gives $\mathrm{ord}_{257}(q)=256$ for $q=2531$ ($\equiv218$), $3329$ ($\equiv245$), $3557$ ($\equiv216$) and $12289$ ($\equiv210 \pmod{257}$). Among the primes below $20000$ there are $1142$ moduli with this property. Not every NTT-friendly prime works: $\mathrm{ord}_{257}(7681)=128$, so $\Phi_{257}$ splits into two factors of degree $128$ modulo $7681$. The moduli used in this paper are $q=2531$, $3329$ and $3557$, chosen per module rank in Section~\ref{sec:params}; $3329$ is the ML-KEM modulus.
 
 \begin{remark}[Comparison with ML-KEM]
 For $q=3329$ one has $q\equiv 1 \pmod{256}$ but $q\not\equiv 1\pmod{512}$ ($3329\bmod 512=257$, $\mathrm{ord}_{512}(3329)=2$). Hence $X^{256}+1$ factors modulo $3329$ into $128$ \emph{quadratic} factors, not $256$ linear ones; this is why ML-KEM uses an incomplete, 7-layer NTT. $q=12289$, which splits $X^{256}+1$ completely, is not an ML-KEM modulus.
@@ -67,7 +69,7 @@ $\F_{q^{256}}$ is not ``subfield-free'': it contains the subfields $\F_{q^{2^j}}
 \paragraph{Multiplication.} Let $a,b\in\Rq$ with coefficient vectors of length $256$ (degree $\le255$). Then $ab=\sum_{i=0}^{510}c_iX^i$ over $\Z_q$. Since $\Phi_{257}\mid X^{257}-1$, first fold $p_i=\sum_{j+l\equiv i\ (257)}a_jb_l$ for $0\le i\le256$; then $ab\bmod\Phi_{257}$ has coefficients $p_i-p_{256}$ for $0\le i\le255$ (because $X^{256}\equiv-(X^{255}+\dots+1)$). Hence a ring multiplication is a length-$257$ cyclic convolution followed by $256$ subtractions.
 
 \section{Scheme}\label{sec:scheme}
-Fix $q=3329$, $\eta=2$, module rank $k\in\{2,3,4\}$. Let $\mathrm{Enc}_1(m)=\lceil q/2\rfloor\cdot m$ embed $m\in\{0,1\}^{256}$ coefficient-wise into $\Rq$ and $\mathrm{Dec}_1(x)_i=1$ iff the centered representative of $x_i$ lies in $[\lceil q/4\rceil,\lfloor 3q/4\rfloor]$.
+Fix $\eta=2$, module rank $k\in\{2,3,4\}$ and the modulus $q_k$ of Table~\ref{tab:params}: $q_2=2531$, $q_3=3329$, $q_4=3557$ (Section~\ref{sec:params}); we write $q$ for $q_k$. Let $\mathrm{Enc}_1(m)=\lceil q/2\rfloor\cdot m$ embed $m\in\{0,1\}^{256}$ coefficient-wise into $\Rq$ and $\mathrm{Dec}_1(x)_i=1$ iff the centered representative of $x_i$ lies in $[\lceil q/4\rceil,\lfloor 3q/4\rfloor]$.
 
 \paragraph{PKE.}
 \begin{itemize}[nosep]
@@ -85,15 +87,15 @@ Fix $q=3329$, $\eta=2$, module rank $k\in\{2,3,4\}$. Let $\mathrm{Enc}_1(m)=\lce
 \end{itemize}
 By \cite{HHK17}, IND-CCA2 security of this KEM in the random-oracle model follows from IND-CPA security of the PKE together with a sufficiently small decryption failure probability $\delta$; the explicit bound of \cite{HHK17} should be consulted for the concrete loss in terms of the number of oracle queries. We make no quantum-random-oracle claim.
 
-\paragraph{Sizes (no compression).} With $12$-bit packing: $|pk|=384k+32$ B, $|c|=384(k+1)$ B, $|sk_{\mathrm{KEM}}|=384k+|pk|+64$ B.
+\paragraph{Sizes (no compression).} All three moduli are below $4096$, so $12$-bit packing applies: $|pk|=384k+32$ B, $|c|=384(k+1)$ B, $|sk_{\mathrm{KEM}}|=384k+|pk|+64$ B.
 \begin{table}[h]\centering
-\begin{tabular}{lrrrrr}\toprule
-Set & $k$ & $n=256k$ & $|pk|$ & $|c|$ & $|sk_{\mathrm{KEM}}|$\\\midrule
-CLH-MAX-512 & 2 & 512 & 800 & 1152 & 1632\\
-CLH-MAX-768 & 3 & 768 & 1184 & 1536 & 2400\\
-CLH-MAX-1024 & 4 & 1024 & 1568 & 1920 & 3168\\\bottomrule
+\begin{tabular}{lrrrrrr}\toprule
+Set & $k$ & $n=256k$ & $q$ & $|pk|$ & $|c|$ & $|sk_{\mathrm{KEM}}|$\\\midrule
+CLH-MAX-512 & 2 & 512 & 2531 & 800 & 1152 & 1632\\
+CLH-MAX-768 & 3 & 768 & 3329 & 1184 & 1536 & 2400\\
+CLH-MAX-1024 & 4 & 1024 & 3557 & 1568 & 1920 & 3168\\\bottomrule
 \end{tabular}
-\caption{Parameter sets and sizes in bytes; $q=3329$, $\eta=2$, no ciphertext compression.}
+\caption{Parameter sets and sizes in bytes; $\eta=2$, no ciphertext compression.}\label{tab:params}
 \end{table}
 Ciphertext compression as in ML-KEM is not specified here and would change both $\delta$ and ciphertext size.
 
@@ -116,20 +118,26 @@ is an MLWE sample with secret $r$ and $k+1$ rows. $\mathcal B_2$, given $(B,w)$,
 The theorem is a relative statement. It does \emph{not} give $\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}=0$: an unbounded adversary recovers $s$ from $(A,t)$ (the support of $(s,e)$ is far smaller than $q^{256k}$), so no sound assumption can set the MLWE advantage of \emph{all} distinguishers to zero. Security is computational and rests on the hardness of MLWE for efficient adversaries. Any mechanised proof should formalise the inequality of Theorem~\ref{thm:cpa}, not an unconditional-hardness axiom.
 \end{remark}
 
-\paragraph{Worst-case reductions.} Lyubashevsky--Peikert--Regev \cite{LPR13} give a quantum reduction from approximate worst-case SVP on ideal lattices to RLWE for \emph{any} cyclotomic field, hence including $\mathbb{Q}(\zeta_{257})$, but for discrete Gaussian errors in the canonical embedding with width $\alpha q\ge\omega(\sqrt{\log n})$ and with moduli and approximation factors that are polynomial in $n$ with non-trivial exponents. The parameters used here ($q=3329$, centered binomial $\eta=2$, $n=256$) lie outside that regime, exactly as for ML-KEM, so the reductions provide asymptotic motivation only and no concrete bits of security. Moreover, for prime-power cyclotomic fields (which includes conductor $257$) there are quantum algorithms for ideal-SVP with approximation factors $\exp(\tilde O(\sqrt n))$ in certain settings \cite{CDPR16,CDW17}; these do not break RLWE at the parameters considered, but they caution against reading worst-case statements as guarantees.
+\paragraph{Worst-case reductions.} Lyubashevsky--Peikert--Regev \cite{LPR13} give a quantum reduction from approximate worst-case SVP on ideal lattices to RLWE for \emph{any} cyclotomic field, hence including $\mathbb{Q}(\zeta_{257})$, but for discrete Gaussian errors in the canonical embedding with width $\alpha q\ge\omega(\sqrt{\log n})$ and with moduli and approximation factors that are polynomial in $n$ with non-trivial exponents. The parameters used here ($q\le3557$, centered binomial $\eta=2$, $n=256$) lie outside that regime, exactly as for ML-KEM, so the reductions provide asymptotic motivation only and no concrete bits of security. Moreover, for prime-power cyclotomic fields (which includes conductor $257$) there are quantum algorithms for ideal-SVP with approximation factors $\exp(\tilde O(\sqrt n))$ in certain settings \cite{CDPR16,CDW17}; these do not break RLWE at the parameters considered, but they caution against reading worst-case statements as guarantees.
 
-\paragraph{Concrete security.} Attacks on (M)LWE (primal uSVP, BDD, dual, hybrid) as implemented in the lattice-estimator \cite{APS15} see only the triple $(n,q,\chi)$ with $n=kN$; they do not depend on the ring structure. We ran \texttt{LWE.estimate} (default settings, October 2026) with $m=n$, $q=3329$ on the key-recovery instance of each CLH-MAX parameter set and, with the \emph{same call}, on the corresponding ML-KEM instance. Table~\ref{tab:est} reports the output unchanged.
-\begin{table}[h]\centering\small
-\begin{tabular}{lrrrrrrrr}\toprule
-Instance $(n;\ \text{secret},\text{error})$ & BKW & uSVP & BDD & Dual & DH & $\beta_{\mathrm{uSVP}}$ & $\beta_{\mathrm{DH}}$\\\midrule
-$(512;\psi_3,\psi_3)$ [ML-KEM-512] & 178.8 & 143.8 & 140.2 & 149.9 & 139.7 & 406 & 387\\
-$(512;\psi_2,\psi_2)$ [CLH-MAX-512] & 167.2 & 137.1 & 133.7 & 142.6 & 132.8 & 382 & 363\\
-$(768;\psi_2,\psi_2)$ [both] & 238.3 & 204.9 & 201.0 & 214.3 & 196.4 & 624 & 589\\
-$(1024;\psi_2,\psi_2)$ [both] & 315.0 & 275.1 & 270.7 & 288.5 & 262.3 & 874 & 823\\\bottomrule
+\paragraph{Concrete security.} Attacks on (M)LWE (primal uSVP, BDD, dual, hybrid) as implemented in the lattice-estimator \cite{APS15} see only the instance parameters $(n,m,q,\chi_s,\chi_e)$; they do not depend on the ring structure. We ran \texttt{LWE.estimate} (default settings, October 2026) on two instances per parameter set: \emph{key recovery} ($n=256k$, $m=n$, secret and error $\psi_2$) and \emph{message recovery} (secret $r$, errors $(e_1,e_2)$: $n=256k$, $m=256(k+1)$), and, with the same call, on the corresponding ML-KEM instances (ML-KEM-512: $\psi_3$ secret and error for key recovery, $\psi_3$ secret and $\psi_2$ error for message recovery). Table~\ref{tab:est} reports the output unchanged.
+\begin{table}[h]\centering\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrrrr}\toprule
+Scheme & Instance & BKW & uSVP & BDD & Dual & DH & $\beta_{\mathrm{DH}}$\\\midrule
+ML-KEM-512 & key ($m{=}512$) & 178.8 & 143.8 & 140.2 & 149.9 & 139.7 & 387\\
+ML-KEM-512 & message ($m{=}768$) & 178.8 & 149.6 & 144.9 & 146.2 & 136.6 & 376\\
+CLH-512 (2531) & key & 173.0 & 141.5 & 137.9 & 147.6 & 136.8 & 374\\
+CLH-512 (2531) & message & 172.9 & 141.5 & 137.9 & 147.6 & 136.8 & 374\\\midrule
+ML-KEM-768 = CLH-768 (3329) & key & 238.3 & 204.9 & 201.0 & 214.3 & 196.4 & 589\\
+ML-KEM-768 = CLH-768 (3329) & message & 238.1 & 204.9 & 201.0 & 214.3 & 196.4 & 589\\\midrule
+ML-KEM-1024 & key & 315.0 & 275.1 & 270.7 & 288.5 & 262.3 & 823\\
+ML-KEM-1024 & message & 310.5 & 275.1 & 270.7 & 288.5 & 262.3 & 823\\
+CLH-1024 (3557) & key & 311.2 & 273.2 & 268.8 & 286.4 & 260.4 & 817\\
+CLH-1024 (3557) & message & 311.1 & 273.2 & 268.8 & 286.4 & 260.4 & 817\\\bottomrule
 \end{tabular}
-\caption{lattice-estimator output, $\log_2$(operations), $q=3329$, $m=n$, one call and one cost model for all rows. DH = dual hybrid, the cheapest attack in every row. Instances for $n=768,1024$ are literally identical for CLH-MAX and ML-KEM, hence identical outputs.}\label{tab:est}
+\caption{lattice-estimator output, $\log_2$(operations); one call and one cost model for all rows. DH = dual hybrid, the cheapest attack in every row. For $k=3$ the instances are literally identical for CLH-MAX and ML-KEM.}\label{tab:est}
 \end{table}
-The outcome is what the structure of the estimator predicts: for $k=3,4$ the instances coincide with ML-KEM-768/1024 and so do the estimates; for $k=2$ the choice $\eta=2$ makes CLH-MAX-512 about $7$ bits \emph{weaker} than ML-KEM-512 (which uses $\psi_3$ for the key). Hence the ring $\Z_q[X]/\Phi_{257}$ neither helps nor hurts \emph{in these generic estimates}; nothing in them supports a security advantage over ML-KEM. Limitations: only the key-recovery instance was estimated (the message-recovery instance with secret $r$ should also be run), the estimates are for generic MLWE, and we assign no NIST category. Known structural attacks (subfield attacks on overstretched NTRU \cite{ABD16,CJL16}) target large-modulus NTRU-type instances and are not known to apply to MLWE at $q=3329$ in either ring; Remark~\ref{rem:sub} explains why the field structure of $\Rq$ is not obviously free of exploitable structure.
+For ML-KEM-512 the message-recovery instance is the weakest ($2^{136.6}$, dual hybrid), cheaper than key recovery ($2^{139.7}$). Taking for each scheme the cheapest attack over both instances: for $k=2$, CLH-MAX-512 gives $2^{136.8}$ against $2^{136.6}$ for ML-KEM-512 ($+0.2$ bits); for $k=3$ both give $2^{196.4}$; for $k=4$, CLH-MAX-1024 gives $2^{260.4}$ against $2^{262.3}$ for ML-KEM-1024 ($-1.9$ bits). For CLH-MAX the two instances coincide up to rounding, because secret and error share the same distribution. We draw no ranking conclusion from differences of this size: in this model CLH-MAX matches ML-KEM to within about two bits, and the ring itself plays no role in the estimates. Limitations: the estimates are for generic MLWE, they use the independence of the coordinates of $(s,e)$ built into the estimator, and we assign no NIST category. Known structural attacks (subfield attacks on overstretched NTRU \cite{ABD16,CJL16}) target large-modulus NTRU-type instances and are not known to apply to MLWE at these moduli in either ring; Remark~\ref{rem:sub} explains why the field structure of $\Rq$ is not obviously free of exploitable structure.
 
 \section{Correctness: decryption failure probability}\label{sec:dfp}
 \begin{lemma}\label{lem:count}
@@ -137,34 +145,48 @@ For $a,b\in\Rq$ with independent coefficients, every coefficient of $ab\in\Rq$ i
 \end{lemma}
 \noindent The proof is a direct count of index pairs (Appendix~\ref{app:count}). This is roughly twice the $256$ terms of a negacyclic product, so the variance of a product coefficient is about $2\sigma^4\cdot256$ rather than $256\sigma^4$.
 
-For module rank $k$, the coefficient $E_i$ of $e^{T}r-s^{T}e_1+e_2$ is therefore a sum of $2k\cdot511$ products of two independent $\psi_2$ samples (a conservative count) plus one $\psi_2$ sample, with variance $\sigma_E^2=1022k+1$. Following the usual heuristic of treating the summands as independent, we compute the \emph{exact} distribution by convolution and bound $\delta\le 256\cdot\Pr[|E_i|\ge\lfloor q/4\rfloor]$ with $\lfloor q/4\rfloor=832$. The script is in Appendix~\ref{app:script}.
+For module rank $k$, the coefficient $E_i$ of $e^{T}r-s^{T}e_1+e_2$ is therefore a sum of $2k\cdot511$ products of two independent $\psi_2$ samples (a conservative count) plus one $\psi_2$ sample, with variance $\sigma_E^2=1022k+1$. Following the usual heuristic of treating the summands as independent, we compute the \emph{exact} distribution by convolution and bound $\delta\le 256\cdot\Pr[|E_i|\ge\lfloor q/4\rfloor]$. The script is in Appendix~\ref{app:script}.
 \begin{table}[h]\centering
-\begin{tabular}{lrrrr}\toprule
-Set & $k$ & $\sigma_E^2$ & $\log_2\Pr[|E_i|\ge832]$ & $\log_2\delta$\\\midrule
-CLH-MAX-512 & 2 & 2045 & $-239.0$ & $-231$\\
-CLH-MAX-768 & 3 & 3067 & $-163.9$ & $-156$\\
-CLH-MAX-1024 & 4 & 4089 & $-124.7$ & $-117$\\\bottomrule
+\begin{tabular}{lrrrrrr}\toprule
+Set & $k$ & $q$ & $\lfloor q/4\rfloor$ & $\sigma_E^2$ & $\log_2\Pr[|E_i|\ge\lfloor q/4\rfloor]$ & $\log_2\delta$\\\midrule
+CLH-MAX-512 & 2 & 2531 & 632 & 2045 & $-141.5$ & $-133.5$\\
+CLH-MAX-768 & 3 & 3329 & 832 & 3067 & $-163.9$ & $-155.9$\\
+CLH-MAX-1024 & 4 & 3557 & 889 & 4089 & $-141.7$ & $-133.7$\\\bottomrule
 \end{tabular}
-\caption{Decryption failure probability, no ciphertext compression, $q=3329$, $\eta=2$.}
+\caption{Decryption failure probability, no ciphertext compression, $\eta=2$.}\label{tab:dfp}
 \end{table}
-Sets with $k=2,3$ satisfy $\delta<2^{-128}$; \textbf{the set with $k=4$ does not} ($\delta\approx2^{-117}$). Using it inside FO would require changing parameters (e.g.\ a larger modulus with adapted noise, or an error-correcting encoding of $m$), which would also change the security analysis; we leave this open. The Gaussian tail approximation $\exp(-832^2/2\sigma_E^2)$ gives $\approx 2^{-245}$ per coefficient for $k=2$, in line with the exact value.
+All three sets satisfy $\delta<2^{-128}$ with a margin of at least $5$ bits under this heuristic. A rigorous bound would have to account for the dependence between products that share a factor; we do not provide one.
 
-\paragraph{Trade-off between security and correctness at $k=2$.} Raising the key noise of CLH-MAX-512 to ML-KEM-512's $\eta_1=3$ (with $r\leftarrow\psi_3$, $e_1,e_2\leftarrow\psi_2$, so that the key-recovery instance equals the ML-KEM-512 row of Table~\ref{tab:est}) closes the $7$-bit gap but raises $\sigma_E^2$ to about $3834$; the exact computation gives $\delta\approx2^{-123}$, which does \emph{not} meet $2^{-128}$ (ML-KEM-512 achieves its failure rate with only $256$ terms per product coefficient, plus ciphertext compression effects not modelled here). Thus for conductor $257$ the near doubling of terms per coefficient (Lemma~\ref{lem:count}) forces a choice at $k=2$: $\eta=2$ with $\delta\approx2^{-231}$ and about $2^{132.8}$ (dual hybrid), or $\eta_1=3$ with $\delta\approx2^{-123}$ and about $2^{139.7}$. We specify the former and regard the latter as an open design question.
+\section{Parameter selection}\label{sec:params}
+Two effects pull in opposite directions. Decreasing $q$ with fixed $\psi_2$ noise increases the cost of lattice attacks, but it also shrinks the decoding threshold $\lfloor q/4\rfloor$ and hence increases $\delta$. Because of Lemma~\ref{lem:count} the variance of a product coefficient is about twice that of a negacyclic ring, so with the ML-KEM modulus $q=3329$ the rank-4 set has $\delta\approx2^{-117}$, and raising the key noise of the rank-2 set to ML-KEM-512's $\eta_1=3$ (with $r\leftarrow\psi_3$, $e_1,e_2\leftarrow\psi_2$) gives $\delta\approx2^{-123}$; neither meets $2^{-128}$. We therefore scanned all primes $2000<q<20000$ with $\mathrm{ord}_{257}(q)=256$, for $k\in\{2,4\}$ and $\eta\in\{2,3\}$, using (a) a primal-attack estimate of the uSVP block size, which reproduces exactly the four uSVP block sizes of our reference estimator runs, and (b) a Chernoff bound on $\delta$ (conservative, about $5$ bits above the exact value). The finalists were then confirmed with the lattice-estimator and with the exact computation of Section~\ref{sec:dfp}:
+\begin{table}[h]\centering\small
+\begin{tabular}{rrrrrr}\toprule
+$k$ & $q$ & $\beta_{\mathrm{uSVP}}$ & DH (key) & $\log_2\delta$ & status\\\midrule
+2 & 3329 & 382 & 132.8 & $-231.0$ & superseded\\
+2 & \textbf{2531} & 398 & 136.8 & $-133.5$ & \textbf{chosen}\\
+2 & 2663 & 395 & 136.2 & $-148.0$ & alternative\\\midrule
+4 & 3329 & 874 & 262.3 & $-116.7$ & fails $\delta$\\
+4 & \textbf{3557} & 867 & 260.4 & $-133.7$ & \textbf{chosen}\\
+4 & 3617 & 865 & 259.5 & $-138.4$ & alternative\\\bottomrule
+\end{tabular}
+\caption{Candidate moduli ($\eta=2$). For the alternatives only the key-recovery instance was run with the estimator. DH = dual hybrid, $\log_2$ operations.}
+\end{table}
+For $k=3$, $q=3329$ already matches ML-KEM-768 and gives $\delta\approx2^{-156}$, so it is kept. For $k=2,4$ we choose the smaller modulus, which keeps at least $5$ bits of margin in $\delta$ and is closest to ML-KEM in the estimator; the larger alternatives give up about one bit of security for $5$--$15$ additional bits of margin. The choice is a judgement, not an optimum, and a different weighting of the two criteria is equally defensible.
 
 \section{Arithmetic}\label{sec:arith}
-By Section~\ref{sec:ring}, multiplication in $\Rq$ is a length-$257$ cyclic convolution followed by a correction. Schoolbook multiplication costs $256^2=65{,}536$ coefficient products per ring multiplication; $\mathsf{KeyGen}$ needs $k^2$ ring products for $As$ and $\mathsf{Enc}$ needs $k^2+k+k$ more. A fast NTT route requires a transform of length $\ge511$ covering the linear convolution, i.e.\ $512\mid q-1$. $q=12289$ satisfies this ($12288=3\cdot2^{12}$) and $\mathrm{ord}_{257}(12289)=256$, but $q=3329$ does not ($3328=2^8\cdot13$). With $q=3329$ one must use Karatsuba/Toom--Cook, Bluestein/Rader-type or lifted-modulus methods. No implementation or benchmark is presented and we make no performance claim. Changing to $q=12289$ would require re-deriving the noise parameters, the security estimates and $\delta$.
+By Section~\ref{sec:ring}, multiplication in $\Rq$ is a length-$257$ cyclic convolution followed by a correction. Schoolbook multiplication costs $256^2=65{,}536$ coefficient products per ring multiplication; $\mathsf{KeyGen}$ needs $k^2$ ring products for $As$ and $\mathsf{Enc}$ needs $k^2+k+k$ more. A fast NTT route requires a transform of length $\ge511$ covering the linear convolution, i.e.\ $512\mid q-1$. None of the moduli used here satisfies this: $2530=2\cdot5\cdot11\cdot23$, $3328=2^8\cdot13$ and $3556=2^2\cdot7\cdot127$. (The prime $q=12289$ does satisfy it, $12288=3\cdot2^{12}$, and $\mathrm{ord}_{257}(12289)=256$, but it would require re-deriving the noise parameters, the security estimates and $\delta$.) One must therefore use Karatsuba/Toom--Cook, Bluestein/Rader-type or lifted-modulus methods. No implementation or benchmark is presented and we make no performance claim.
 
 \section{Comparison with ML-KEM}
 \begin{table}[h]\centering\small
 \begin{tabular}{p{3.4cm}p{5.8cm}p{5.2cm}}\toprule
  & CLH-MAX (this work) & ML-KEM (FIPS 203)\\\midrule
-Ring & $\Z_{3329}[X]/\Phi_{257}$, field $\F_{q^{256}}$ & $\Z_{3329}[X]/(X^{256}+1)$, 128 quadratic factors\\
-Fast multiplication & no negacyclic NTT at $q=3329$ & incomplete 7-layer NTT\\
+Ring & $\Z_q[X]/\Phi_{257}$, $q\in\{2531,3329,3557\}$, field $\F_{q^{256}}$ & $\Z_{3329}[X]/(X^{256}+1)$, 128 quadratic factors\\
+Fast multiplication & no NTT for any of the three moduli & incomplete 7-layer NTT\\
 Noise & $\psi_2$ throughout & $\psi_3$ in the key for ML-KEM-512\\
-Generic MLWE estimate & Table~\ref{tab:est}: identical to ML-KEM for $k=3,4$; $\approx7$ bits lower at $k=2$ & same estimator call\\
+Generic MLWE estimate (key and message recovery) & Table~\ref{tab:est}: $+0.2$ bit ($k=2$, vs.\ weakest ML-KEM-512 instance), identical ($k=3$), $-1.9$ bits ($k=4$) & same estimator call\\
 Worst-case motivation & LPR13, outside concrete regime & same\\
 Standardisation / analysis & none (research proposal) & NIST standard, extensive analysis\\
-$\delta$ & $<2^{-128}$ for $k=2,3$; $\approx2^{-117}$ for $k=4$ & see FIPS 203\\\bottomrule
+$\delta$ & $\le2^{-133}$ for all three sets (heuristic, Table~\ref{tab:dfp}) & see FIPS 203\\\bottomrule
 \end{tabular}
 \caption{Qualitative comparison; no security ranking is claimed.}
 \end{table}
@@ -172,17 +194,15 @@ $\delta$ & $<2^{-128}$ for $k=2,3$; $\approx2^{-117}$ for $k=4$ & see FIPS 203\\
 \section{Artifact availability}
 The source files of this version (\LaTeX{} source, the Lean~4 development, the scripts of Appendix~\ref{app:script} and the raw estimator output) are archived on Zenodo:
 \begin{itemize}[nosep]
-\item version 2.0.0 (this paper): \url{https://doi.org/10.5281/zenodo.23428067}
+\item version 2.0.1 (this paper): \url{https://doi.org/10.5281/zenodo.23460069}
 \item all versions (always resolves to the latest): \url{https://doi.org/10.5281/zenodo.22883946}
 \end{itemize}
-Earlier Zenodo versions (v1 to 1.6) contain the previous version of this work, whose claims are withdrawn; see the file \texttt{ERRATA.md} in the repository.
-
-The file \texttt{ClhMaxSecurity.lean} compiles against Mathlib v4.35.0 and formalises the game-hopping inequality underlying Theorem~\ref{thm:cpa} for one ring component ($k=1$): the left-or-right IND-CPA advantage is bounded by the sum of the advantages of four explicit distinguishers against (Ring-)LWE with one and two samples. It uses no hardness axiom and no \texttt{sorry}; \texttt{\#print axioms} reports only \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}. It does not formalise the hardness of (M)LWE, running times, or the module case $k>1$.
+Earlier Zenodo versions (v1 to 1.6) contain the previous version of this work, whose claims are withdrawn; version 2.0.0 used the modulus $q=3329$ for all module ranks. See the file \texttt{ERRATA.md} in the repository.
 
 The file \texttt{ClhMaxSecurity.lean} compiles against Mathlib v4.35.0 and formalises the game-hopping inequality underlying Theorem~\ref{thm:cpa} for one ring component ($k=1$): the left-or-right IND-CPA advantage is bounded by the sum of the advantages of four explicit distinguishers against (Ring-)LWE with one and two samples. It uses no hardness axiom and no \texttt{sorry}; \texttt{\#print axioms} reports only \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}. It does not formalise the hardness of (M)LWE, running times, or the module case $k>1$.
 
 \section{Open problems}
-(i) Choose $k=2$ and $k=4$ parameters that meet both $\delta<2^{-128}$ and ML-KEM-level security (the extra terms per product coefficient in $\Rq$ cost correctness; ciphertext compression, an error-correcting message encoding or a different modulus are candidates). (ii) Estimate the message-recovery instance as well as key recovery. (iii) Efficient implementation at $q=3329$. (iv) Study whether the field structure and the order-$256$ Galois action of $\Rq$ give any algebraic leverage against MLWE. (v) A machine-checked proof of Theorem~\ref{thm:cpa}.
+(i) A rigorous bound on $\delta$ (instead of the independence heuristic) and the effect of ciphertext compression on $\delta$ and on ciphertext size. (ii) Narrowing the residual gap of about two bits at $k=4$, e.g.\ with other $(\eta,q)$ or with different noise for secret and error. (iii) Efficient implementation: none of the moduli admits an NTT. (iv) Whether the field structure and the order-$256$ Galois action of $\Rq$ give any algebraic leverage against MLWE. (v) A machine-checked proof of Theorem~\ref{thm:cpa} for $k>1$ (the Lean file covers $k=1$).
 
 \appendix
 \section{Proof of Lemma~\ref{lem:count}}\label{app:count}
@@ -205,7 +225,7 @@ B2(B, w):                        # MLWE challenge: k+1 samples, secret r
 Real MLWE samples reproduce the corresponding game exactly; uniform samples reproduce the next game.
 
 \section{Reproducibility scripts}\label{app:script}
-\paragraph{Decryption failure probability} (exact convolution under the independence heuristic; $e,s,r\leftarrow\psi_{\eta_1}$, $e_1,e_2\leftarrow\psi_{\eta_2}$).
+\paragraph{Decryption failure probability} (exact convolution under the independence heuristic; $e,s,r\leftarrow\psi_{\eta_1}$, $e_1,e_2\leftarrow\psi_{\eta_2}$; threshold $\lfloor q/4\rfloor$).
 \begin{verbatim}
 import numpy as np
 from math import log2, comb
@@ -226,7 +246,8 @@ def conv_pow(p, off, m):
         m >>= 1
         if m: base = np.convolve(base, base); boff *= 2
     return res, roff
-def delta(k, eta1, eta2, thr=832):        # thr = floor(q/4), q = 3329
+def delta(k, eta1, eta2, q):
+    thr = q // 4
     pa, oa = prod_pmf(eta1, eta1); pb, ob = prod_pmf(eta1, eta2)
     d1, o1 = conv_pow(pa, oa, k*511); d2, o2 = conv_pow(pb, ob, k*511)
     d, o = np.convolve(d1, d2), o1 + o2
@@ -234,19 +255,27 @@ def delta(k, eta1, eta2, thr=832):        # thr = floor(q/4), q = 3329
     idx = np.arange(len(d)) - o
     t = d[np.abs(idx) >= thr].sum()
     return log2(t), log2(t) + 8           # per coefficient, union over 256
-for k, e1, e2 in [(2,2,2), (3,2,2), (4,2,2), (2,3,2)]:
-    print(k, e1, e2, delta(k, e1, e2))
+for k, e1, e2, q in [(2,2,2,2531), (3,2,2,3329), (4,2,2,3557), (4,2,2,3329)]:
+    print(k, e1, e2, q, delta(k, e1, e2, q))
 \end{verbatim}
-\paragraph{lattice-estimator runs} (same call for all rows; record the estimator commit).
+\paragraph{lattice-estimator runs} (same call for all rows; key recovery has $m=n$, message recovery $m=256(k+1)$).
 \begin{verbatim}
 from estimator import *
 CBD = ND.CenteredBinomial
-sets = [("CLH-MAX-512", 512, 2, 2), ("CLH-MAX-768", 768, 2, 2),
-        ("CLH-MAX-1024", 1024, 2, 2), ("ML-KEM-512", 512, 3, 3),
-        ("ML-KEM-768", 768, 2, 2), ("ML-KEM-1024", 1024, 2, 2)]
-for name, n, es, ee in sets:
-    p = LWE.Parameters(n=n, q=3329, Xs=CBD(es), Xe=CBD(ee), m=n, tag=name)
-    print(name); print(LWE.estimate(p))
+# name, k, q, eta_secret, eta_error
+# (ML-KEM-512 is handled separately below: key psi_3/psi_3, message psi_3/psi_2)
+sets = [("CLH-512", 2, 2531, 2, 2), ("CLH-768", 3, 3329, 2, 2),
+        ("CLH-1024", 4, 3557, 2, 2), ("ML-KEM-768", 3, 3329, 2, 2),
+        ("ML-KEM-1024", 4, 3329, 2, 2)]
+for name, k, q, es, ee in sets:
+    for kind, m in (("key", 256*k), ("message", 256*(k+1))):
+        p = LWE.Parameters(n=256*k, q=q, Xs=CBD(es), Xe=CBD(ee), m=m,
+                           tag=name + "-" + kind)
+        print(name, kind); print(LWE.estimate(p))
+for kind, es, ee, m in (("key", 3, 3, 512), ("message", 3, 2, 768)):
+    p = LWE.Parameters(n=512, q=3329, Xs=CBD(es), Xe=CBD(ee), m=m,
+                       tag="ML-KEM-512-" + kind)
+    print("ML-KEM-512", kind); print(LWE.estimate(p))
 \end{verbatim}
 
 \begin{thebibliography}{99}
@@ -257,6 +286,7 @@ for name, n, es, ee in sets:
 \bibitem{CDPR16} R.~Cramer, L.~Ducas, C.~Peikert, O.~Regev. Recovering short generators of principal ideals in cyclotomic rings. EUROCRYPT 2016.
 \bibitem{CDW17} R.~Cramer, L.~Ducas, B.~Wesolowski. Short Stickelberger class relations and application to Ideal-SVP. EUROCRYPT 2017.
 \bibitem{HHK17} D.~Hofheinz, K.~H\"ovelmanns, E.~Kiltz. A modular analysis of the Fujisaki--Okamoto transformation. TCC 2017.
+\bibitem{Round5} H.~Baan, S.~Bhattacharya, S.~Fluhrer, O.~Garcia-Morchon, T.~Laarhoven, R.~Rietman, M.-J.~O.~Saarinen, L.~Tolhuizen, Z.~Zhang. Round5: Compact and fast post-quantum public-key encryption. PQCrypto 2019 (ePrint 2019/090).
 \bibitem{LPR13} V.~Lyubashevsky, C.~Peikert, O.~Regev. On ideal lattices and learning with errors over rings. J.\ ACM 60(6), 2013.
 \bibitem{FIPS203} NIST. FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard. 2024.
 \end{thebibliography}
