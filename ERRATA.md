@@ -49,3 +49,24 @@ contained errors. They are listed here for transparency. **Version 2 supersedes 
    cyclotomic rings; no novelty is claimed for the ring.
 4. **Scripts.** `scripts/dfp.py` now takes `q` as a parameter; added
    `scripts/estimate_candidates.py` and `scripts/estimate_message_recovery.py`.
+
+## v2.0.1 → v2.0.2
+
+1. **Arithmetic.** Version 2.0.1 said that none of the moduli admits an NTT. This is true modulo
+   `q`, but exact products can be computed with an NTT over an auxiliary prime (e.g.
+   `469762049 = 7*2^26+1`) because every product in the scheme has one small operand. Verified
+   against the explicit reduction modulo `Φ_257` (`scripts/clh_max_ref.py`). Not benchmarked.
+2. **Ciphertext size.** New computation (`scripts/compression_dfp.py`): with ML-KEM's compression
+   parameters the decryption failure probability is about `2^-83`, `2^-86`, `2^-100` for `k = 2, 3, 4`
+   (it does not reach `2^-128`), so uncompressed ciphertexts are 50 %, 41 % and 22 % larger than
+   ML-KEM's. A modulus with a native NTT (`q = 12289`) would need `η = 11` for the same security and
+   gives `δ ≈ 2^-98`.
+3. **Failure model.** Added a Monte Carlo validation (`scripts/validate_dfp.py`): agreement within 1 %
+   up to about `3.5σ`; a possible small excess in the far tail for `k = 2` cannot be excluded.
+4. **Ring-specific considerations.** New section: hypotheses of the homomorphism-based attacks
+   (Eisenträger-Hallgren-Lauter, Elias-Lauter-Ozman-Stange, Chen-Lauter-Stange) checked against the
+   field ring. This is not a proof of security.
+5. **Lean.** Added `ClhMaxModule.lean`: the game-hopping inequality for arbitrary module rank `k`.
+6. **Presentation.** Keywords added; theorem, lemma, proposition numbering is now per environment
+   (the first theorem was previously numbered 7); open problems updated; a "Status" paragraph states
+   that the note is unrefereed and that CLH-MAX must not be used to protect real data.
