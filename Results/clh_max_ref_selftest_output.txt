@@ -1,0 +1,6 @@
+# Output of scripts/clh_max_ref.py (raw, unmodified)
+# Produced by the assistant in a sandbox (Python 3 + numpy), October 2026. Re-run locally to reproduce.
+
+CLH-MAX-512 (k=2, q=2531): KEM roundtrips 10/10, tampered ciphertexts rejected 10/10, PKE decryption failures 0/100, NTT product == fold product: True
+CLH-MAX-768 (k=3, q=3329): KEM roundtrips 10/10, tampered ciphertexts rejected 10/10, PKE decryption failures 0/100, NTT product == fold product: True
+CLH-MAX-1024 (k=4, q=3557): KEM roundtrips 10/10, tampered ciphertexts rejected 10/10, PKE decryption failures 0/100, NTT product == fold product: True
