@@ -34,12 +34,12 @@ def delta_compressed(k, q, du, dv, eta=2):
     su, osu = dfp.conv_pow(arr, off, k * 511)
     su, osu = reflect(su, osu)
     E, oE = conv(E, oE, su, osu)
-    idx = np.arange(len(E)) - oE; t = E[np.abs(idx) >= q // 4].sum()
+    idx = np.arange(len(E)) - oE; t = E[np.abs(idx) >= dfp.threshold(q)].sum()
     return log2(t) + 8
 
 def table():
     print("k  q     du dv  ct bytes  log2 delta")
-    for k, q in ((2, 2531), (3, 3329), (4, 3557)):
+    for k, q in ((2, 2663), (3, 3329), (4, 3643)):
         for du, dv in ((10, 4), (10, 5), (11, 5), (11, 6), (12, 12)):
             ct = 32 * k * du + 32 * dv
             print(f"{k}  {q}  {du:2d} {dv:2d}   {ct:5d}     {delta_compressed(k, q, du, dv):7.1f}")
@@ -52,7 +52,7 @@ def log2delta_chernoff(k, eta, q):
         for b, pb in c.items(): pr[a * b] = pr.get(a * b, 0) + pa * pb
     S = np.linspace(0.0005, 0.3, 3000)
     mp_ = np.log(sum(p * np.exp(S * v) for v, p in pr.items())); mc = np.log(sum(p * np.exp(S * v) for v, p in c.items()))
-    val = (-S * (q // 4) + 2 * k * 511 * mp_ + mc).min()
+    val = (-S * dfp.threshold(q) + 2 * k * 511 * mp_ + mc).min()
     return (log(512) + val) / log(2)
 def usvp_beta(n, q, v):
     B = np.arange(60, 2200, dtype=float)

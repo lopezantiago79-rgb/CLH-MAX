@@ -4,9 +4,9 @@ from estimator import *
 CBD = ND.CenteredBinomial
 sets = [
     # name,          k, q,    eta_s(r), eta_e(e1,e2)
-    ("CLH-512-q2531",  2, 2531, 2, 2),
+    ("CLH-512-q2663",  2, 2663, 2, 2),
     ("CLH-768-q3329",  3, 3329, 2, 2),
-    ("CLH-1024-q3557", 4, 3557, 2, 2),
+    ("CLH-1024-q3643", 4, 3643, 2, 2),
     ("ML-KEM-512",     2, 3329, 3, 2),   # r ~ psi_3, e1,e2 ~ psi_2
     ("ML-KEM-768",     3, 3329, 2, 2),
     ("ML-KEM-1024",    4, 3329, 2, 2),

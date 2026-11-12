@@ -19,8 +19,11 @@ def conv_pow(p, off, m):
         m >>= 1
         if m: base = np.convolve(base, base); boff *= 2
     return res, roff
+def threshold(q):
+    """Smallest |E| that can cause a decoding error (q odd): floor(q/4) if q = 1 mod 4, ceil(q/4) if q = 3 mod 4."""
+    return q // 4 if q % 4 == 1 else (q + 1) // 4
 def delta(k, eta1, eta2, q):
-    thr = q // 4
+    thr = threshold(q)
     pa, oa = prod_pmf(eta1, eta1); pb, ob = prod_pmf(eta1, eta2)
     d1, o1 = conv_pow(pa, oa, k*511); d2, o2 = conv_pow(pb, ob, k*511)
     d, o = np.convolve(d1, d2), o1 + o2
@@ -29,5 +32,5 @@ def delta(k, eta1, eta2, q):
     t = d[np.abs(idx) >= thr].sum()
     return log2(t), log2(t) + 8           # per coefficient, union over 256
 if __name__ == "__main__":
-    for k, e1, e2, q in [(2,2,2,2531), (3,2,2,3329), (4,2,2,3557), (4,2,2,3329)]:
+    for k, e1, e2, q in [(2,2,2,2663), (3,2,2,3329), (4,2,2,3643), (4,2,2,3617), (2,2,2,2531), (4,2,2,3557), (4,2,2,3329)]:
         print(k, e1, e2, q, delta(k, e1, e2, q))

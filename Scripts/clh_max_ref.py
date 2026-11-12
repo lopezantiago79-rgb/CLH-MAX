@@ -6,7 +6,7 @@ Usage: python3 clh_max_ref.py      (runs a self-test)
 """
 import hashlib, numpy as np, os
 N = 256
-PARAMS = {512: (2, 2531), 768: (3, 3329), 1024: (4, 3557)}       # name: (k, q)
+PARAMS = {512: (2, 2663), 768: (3, 3329), 1024: (4, 3643)}       # name: (k, q)
 
 # ---------- ring arithmetic in Z_q[X]/Phi_257 ----------
 def ring_mul(a, b, q):
@@ -77,25 +77,25 @@ def pke_dec(s, ct, k, q):
     w = (v - sum(ring_mul(u[j], s[j] % q, q) for j in range(k))) % q
     return ((4 * w >= q) & (4 * w < 3 * q)).astype(np.int64)
 
-# ---------- KEM (FO with implicit rejection, as in the paper) ----------
-H = lambda x: hashlib.sha3_256(x).digest()
-G = lambda x: hashlib.shake_256(x).digest(64)
+# ---------- KEM: FO with implicit rejection, exactly FO^{not-perp}[PKE, G, H] of Hofheinz-Hoevelmanns-Kiltz ----------
+# KeyGen: (pk, s) <- PKE.KeyGen, z <- M;  Encaps: m <- M, c = Enc(pk, m; G(m)), K = H(m || c);
+# Decaps: m' = Dec(s, c); if Enc(pk, m'; G(m')) = c then K = H(m' || c) else K = H(z || c).
+H = lambda x: hashlib.sha3_256(b"H" + x).digest()
+G = lambda x: hashlib.shake_256(b"G" + x).digest(32)
 def ct_bytes(ct): return b"".join(x.astype(np.int16).tobytes() for x in ct[0]) + ct[1].astype(np.int16).tobytes()
+def _bits(m): return np.unpackbits(np.frombuffer(m, dtype=np.uint8)).astype(np.int64)
 def kem_keygen(name):
     k, q = PARAMS[name]; pk, s = pke_keygen(k, q, os.urandom(64)); z = os.urandom(32)
-    pkb = pk[0] + b"".join(x.astype(np.int16).tobytes() for x in pk[1])
-    return (pk, pkb), (s, pk, H(pkb), z)
-def kem_encaps(name, pkfull):
-    k, q = PARAMS[name]; pk, pkb = pkfull; m = os.urandom(32)
-    Kbar_r = G(m + H(pkb)); Kbar, r = Kbar_r[:32], Kbar_r[32:]
-    ct = pke_enc(pk, np.unpackbits(np.frombuffer(m, dtype=np.uint8)).astype(np.int64), r, k, q)
-    return ct, H(Kbar + H(ct_bytes(ct)))
+    return pk, (s, pk, z)
+def kem_encaps(name, pk):
+    k, q = PARAMS[name]; m = os.urandom(32)
+    ct = pke_enc(pk, _bits(m), G(m), k, q)
+    return ct, H(m + ct_bytes(ct))
 def kem_decaps(name, sk, ct):
-    k, q = PARAMS[name]; s, pk, hpk, z = sk
+    k, q = PARAMS[name]; s, pk, z = sk
     m = np.packbits(pke_dec(s, ct, k, q).astype(np.uint8)).tobytes()
-    Kbar_r = G(m + hpk); Kbar, r = Kbar_r[:32], Kbar_r[32:]
-    ct2 = pke_enc(pk, np.unpackbits(np.frombuffer(m, dtype=np.uint8)).astype(np.int64), r, k, q)
-    return H((Kbar if ct_bytes(ct2) == ct_bytes(ct) else z) + H(ct_bytes(ct)))
+    ct2 = pke_enc(pk, _bits(m), G(m), k, q)
+    return H((m if ct_bytes(ct2) == ct_bytes(ct) else z) + ct_bytes(ct))
 
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
