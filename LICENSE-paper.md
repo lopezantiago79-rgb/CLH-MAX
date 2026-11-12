@@ -30,13 +30,9 @@ GNU Affero General Public License v3.0; see `LICENSE`.
   title   = {{CLH-MAX}: A Lattice-Based KEM Proposal over the Prime Cyclotomic Ring
              $\mathbb{Z}_q[X]/\Phi_{257}(X)$},
   year    = {2026},
-  version = {2.0.2},
-  doi     = {10.5281/zenodo.23705527},
-  url     = {https://doi.org/10.5281/zenodo.23705527},
-  note    = {Unrefereed technical note. Code licensed under AGPL-3.0. Paper licensed under CC BY 4.0.
-             All versions: https://doi.org/10.5281/zenodo.22883946}
-}
-```
+  version = {2.1.0},
+  doi     = {10.5281/zenodo.24167384},
+  url     = {https://doi.org/10.5281/zenodo.24167384},
   note    = {Unrefereed technical note. Code licensed under AGPL-3.0. Paper licensed under CC BY 4.0.
              All versions: https://doi.org/10.5281/zenodo.22883946}
 }
