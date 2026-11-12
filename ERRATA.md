@@ -70,3 +70,28 @@ contained errors. They are listed here for transparency. **Version 2 supersedes 
 6. **Presentation.** Keywords added; theorem, lemma, proposition numbering is now per environment
    (the first theorem was previously numbered 7); open problems updated; a "Status" paragraph states
    that the note is unrefereed and that CLH-MAX must not be used to protect real data.
+
+## v2.0.2 → v2.1.0
+
+1. **Moduli.** `q = 2531` (`k = 2`) and `q = 3557` (`k = 4`) satisfied `δ < 2^-128` only under an independence
+   heuristic. The rigorous bound gives `2^-121.65` and `2^-124.75`. Replaced by `q = 2663` and `q = 3643`
+   (certified `2^-134.57` and `2^-131.17`); `k = 3` keeps `q = 3329` (`2^-143.95`).
+2. **Decoding.** The definition of `Dec1` mixed centered and canonical representatives. It now uses canonical
+   representatives with `h = (q+1)/2`, and a lemma gives the exact success regions and the exact threshold
+   `t_q` (`⌊q/4⌋` for `q ≡ 1 mod 4`, `⌈q/4⌉` for `q ≡ 3 mod 4`). The scripts use `t_q`.
+3. **Failure bound.** New theorem: Chernoff bound with an exact moment generating function (transfer matrix),
+   no independence assumption; certified with interval arithmetic and re-checked with exact rational
+   arithmetic. The statement of version 2.0.2 that a possible excess in the far tail would cost "about one
+   bit" is withdrawn: the rigorous bound is 9 to 14 bits weaker than the heuristic estimate.
+4. **KEM.** The KEM of earlier versions (public-key hash in `G`, `K` derived from a `G`-output and `H(c)`) is
+   replaced by the exact `FO^⊥̸` of Hofheinz–Hövelmanns–Kiltz, for which an explicit IND-CCA2 bound in the
+   random-oracle model is stated and proved (Theorem 2). The secret key is `(s, pk, z)`: 1600, 2368, 3136 bytes.
+5. **Estimates.** Message-recovery instances were measured for the new moduli (identical to key recovery for
+   symmetric noise). Weakest-instance dual-hybrid cost: `2^136.2` (`k = 2`, −0.4 bit vs. ML-KEM), `2^196.4`
+   (`k = 3`, identical), `2^259.2` (`k = 4`, −3.1 bits).
+6. **Asymmetric noise.** Explored with the rigorous bound and the lattice-estimator; no candidate beats the
+   symmetric choice. The uSVP model used for scanning does not reproduce the estimator for asymmetric noise.
+7. **Compression.** Re-evaluated with the exact threshold and the new moduli; ciphertexts remain 50 %, 41 % and
+   22 % larger than ML-KEM's.
+8. **New scripts:** `rigorous_dfp.py`, `certified_dfp.py`, `exact_dfp_check.py`, `asym_search.py`,
+   `estimate_batch.py`; updated `dfp.py`, `compression_dfp.py`, `clh_max_ref.py`, `estimate_message_recovery.py`.
