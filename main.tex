@@ -15,11 +15,11 @@
 \author{Santiago L\'opez Heinzen\\
 Independent researcher\\
 \texttt{lopezantiago79@gmail.com}}
-\date{October 2026 (version 2.0.2)}
+\date{November 2026 (version 2.1.1)}
 \begin{document}
 \maketitle
 \begin{abstract}
-We propose CLH-MAX, a Module-LWE-based key encapsulation mechanism (KEM) in the style of Kyber/ML-KEM in which the ring $\Z_q[X]/(X^{256}+1)$ is replaced by $\Rq=\Z_q[X]/\Phi_{257}(X)$, the ring of the prime cyclotomic field $\mathbb{Q}(\zeta_{257})$. For primes $q$ that are primitive roots modulo $257$ the polynomial $\Phi_{257}$ is irreducible modulo $q$, so $\Rq\cong\F_{q^{256}}$ is a field. We specify the CPA-secure public-key encryption layer, its Fujisaki--Okamoto transform to an IND-CCA2 KEM (random-oracle model), and three parameter sets of module rank $2,3,4$. We give a game-hopping proof that IND-CPA security reduces to the decision Module-LWE problem over $\Rq$, an exact analysis of the decryption failure probability (which corrects the na\"ive coefficient-variance count for this ring and shows that the ML-KEM modulus $q=3329$ is not adequate for rank $4$), validated by Monte Carlo simulation down to tail probabilities of about $10^{-5}$, a choice of the modulus per module rank so that $\delta<2^{-128}$ for all three sets, lattice-estimator outputs for key- and message-recovery instances (identical to ML-KEM-768 for $k=3$, within $0.2$ bits of the weakest ML-KEM-512 instance for $k=2$, and about $2$ bits below ML-KEM-1024 for $k=4$), and a discussion of arithmetic cost: there is no NTT modulo $q$, but exact products can be computed with an NTT over an auxiliary prime because one operand is always small. We make no claim of higher concrete security than ML-KEM; the contribution is a fully specified alternative ring instantiation together with its correctness and reduction analysis, reproducible scripts, and a clear list of open problems.
+We propose CLH-MAX, a Module-LWE-based key encapsulation mechanism (KEM) in the style of Kyber/ML-KEM in which the ring $\Z_q[X]/(X^{256}+1)$ is replaced by $\Rq=\Z_q[X]/\Phi_{257}(X)$, the ring of the prime cyclotomic field $\mathbb{Q}(\zeta_{257})$. For primes $q$ that are primitive roots modulo $257$ the polynomial $\Phi_{257}$ is irreducible modulo $q$, so $\Rq\cong\F_{q^{256}}$ is a field. We specify the CPA-secure public-key encryption layer, its Fujisaki--Okamoto transform to an IND-CCA2 KEM (random-oracle model), and three parameter sets of module rank $2,3,4$. We give a game-hopping proof that IND-CPA security reduces to the decision Module-LWE problem over $\Rq$, an exact analysis of the decryption failure probability (which corrects the na\"ive coefficient-variance count for this ring and shows that the ML-KEM modulus $q=3329$ is not adequate for rank $4$), validated by Monte Carlo simulation down to tail probabilities of about $10^{-5}$, a rigorous Chernoff bound on this probability that needs no independence assumption (evaluated with interval arithmetic), a choice of the modulus per module rank so that the rigorous bound is below $2^{-128}$ for all three sets, lattice-estimator outputs for key- and message-recovery instances (identical to ML-KEM-768 for $k=3$, and within about $0.4$ and $3.1$ bits of the weakest ML-KEM instances for $k=2$ and $k=4$), and a discussion of arithmetic cost: there is no NTT modulo $q$, but exact products can be computed with an NTT over an auxiliary prime because one operand is always small. We make no claim of higher concrete security than ML-KEM; the contribution is a fully specified alternative ring instantiation together with its correctness and reduction analysis, reproducible scripts, and a clear list of open problems.
 \end{abstract}
 
 \noindent\textbf{Keywords.} lattice-based cryptography, post-quantum cryptography, key encapsulation mechanism, Module-LWE, cyclotomic rings, decryption failure.
@@ -30,7 +30,7 @@ We propose CLH-MAX, a Module-LWE-based key encapsulation mechanism (KEM) in the 
 ML-KEM (FIPS~203 \cite{FIPS203}) is based on Module-LWE over $\Z_{3329}[X]/(X^{256}+1)$, a power-of-two cyclotomic ring chosen because it admits a fast (incomplete) number-theoretic transform (NTT). The choice of ring in structured-lattice cryptography is a design parameter that is not fully explored: other cyclotomic rings have been proposed, e.g.\ the prime-conductor rings $\Z_q[X]/\Phi_{n+1}$ ($n+1$ prime) used in the NIST round-2 candidates Round2 and Round5 \cite{Round5}. This note studies one concrete alternative, conductor $257$ (the Fermat prime $F_3=2^8+1$), for which the ring degree is $\varphi(257)=256$, equal to that of ML-KEM, so module ranks, key sizes and noise parameters can be compared directly.
 
 \paragraph{Contributions.}
-(1) A complete specification of CLH-MAX: PKE, FO-based KEM, three parameter sets (Sections~\ref{sec:ring}--\ref{sec:scheme}). (2) A proof that IND-CPA security reduces to two decision-MLWE instances over $\Rq$, with the explicit simulators (Section~\ref{sec:sec}, Appendix~\ref{app:sim}); the game-hopping inequality is machine-checked in Lean~4 for arbitrary module rank (Section~\ref{sec:artifact}). (3) An exact computation of the decryption failure probability including the ring-specific coefficient count for $\Phi_{257}$; it shows that with the ML-KEM modulus $q=3329$ the rank-4 set does \emph{not} reach $2^{-128}$, which we repair by choosing the modulus per rank (Sections~\ref{sec:dfp},\ref{sec:params}, Appendices~\ref{app:count},\ref{app:script}). (4) A cost analysis of multiplication in $\Rq$ (Section~\ref{sec:arith}). (5) A check of the hypotheses of the known ring-specific attacks on RLWE/PLWE, showing why they do not apply to the field ring $\Rq$ (Section~\ref{sec:ringsec}).
+(1) A complete specification of CLH-MAX: PKE, FO-based KEM, three parameter sets (Sections~\ref{sec:ring}--\ref{sec:scheme}). (2) A proof that IND-CPA security reduces to two decision-MLWE instances over $\Rq$, with the explicit simulators (Section~\ref{sec:sec}, Appendix~\ref{app:sim}); the game-hopping inequality is machine-checked in Lean~4 for arbitrary module rank (Section~\ref{sec:artifact}). We also state an explicit IND-CCA2 bound in the random-oracle model (Theorem~\ref{thm:cca}), obtained from \cite{HHK17} with its hypotheses checked for this scheme. (3) An exact decoding threshold, an exact computation of the decryption failure probability including the ring-specific coefficient count for $\Phi_{257}$, and a rigorous Chernoff bound (with interval-arithmetic evaluation) that needs no independence assumption; they show that with the ML-KEM modulus $q=3329$ the rank-4 set does \emph{not} reach $2^{-128}$, which we repair by choosing the modulus per rank (Sections~\ref{sec:dfp},\ref{sec:params}, Appendices~\ref{app:count},\ref{app:script}). (4) A cost analysis of multiplication in $\Rq$ (Section~\ref{sec:arith}). (5) A check of the hypotheses of the known ring-specific attacks on RLWE/PLWE, showing why they do not apply to the field ring $\Rq$ (Section~\ref{sec:ringsec}).
 
 \paragraph{Non-claims.} We do not claim that CLH-MAX is more secure than ML-KEM, that known attacks on ML-KEM fail to apply to a field ring, or that worst-case reductions give concrete security at these parameters. Section~\ref{sec:sec} explains why.
 
@@ -58,7 +58,7 @@ Let $q\ne257$ be prime. Then $\Phi_{257}$ is irreducible over $\F_q$ if and only
 \begin{proof}
 For $\gcd(q,m)=1$ all irreducible factors of $\Phi_m$ over $\F_q$ have degree $\mathrm{ord}_m(q)$; here $\deg\Phi_{257}=\varphi(257)=256$. The statement about $q\mathcal O_K$ is the standard description of inert primes in cyclotomic fields.
 \end{proof}
-Direct computation gives $\mathrm{ord}_{257}(q)=256$ for $q=2531$ ($\equiv218$), $3329$ ($\equiv245$), $3557$ ($\equiv216$) and $12289$ ($\equiv210 \pmod{257}$). Among the primes below $20000$ there are $1142$ moduli with this property. Not every NTT-friendly prime works: $\mathrm{ord}_{257}(7681)=128$, so $\Phi_{257}$ splits into two factors of degree $128$ modulo $7681$. The moduli used in this paper are $q=2531$, $3329$ and $3557$, chosen per module rank in Section~\ref{sec:params}; $3329$ is the ML-KEM modulus.
+Direct computation gives $\mathrm{ord}_{257}(q)=256$ for $q=2663$ ($\equiv93$), $3329$ ($\equiv245$), $3643$ ($\equiv45$) and $12289$ ($\equiv210 \pmod{257}$). Among the primes below $20000$ there are $1142$ moduli with this property. Not every NTT-friendly prime works: $\mathrm{ord}_{257}(7681)=128$, so $\Phi_{257}$ splits into two factors of degree $128$ modulo $7681$. The moduli used in this paper are $q=2663$, $3329$ and $3643$, chosen per module rank in Section~\ref{sec:params}; $3329$ is the ML-KEM modulus.
 
 \begin{remark}[Comparison with ML-KEM]
 For $q=3329$ one has $q\equiv 1 \pmod{256}$ but $q\not\equiv 1\pmod{512}$ ($3329\bmod 512=257$, $\mathrm{ord}_{512}(3329)=2$). Hence $X^{256}+1$ factors modulo $3329$ into $128$ \emph{quadratic} factors, not $256$ linear ones; this is why ML-KEM uses an incomplete, 7-layer NTT. $q=12289$, which splits $X^{256}+1$ completely, is not an ML-KEM modulus.
@@ -71,7 +71,7 @@ $\F_{q^{256}}$ is not ``subfield-free'': it contains the subfields $\F_{q^{2^j}}
 \paragraph{Multiplication.} Let $a,b\in\Rq$ with coefficient vectors of length $256$ (degree $\le255$). Then $ab=\sum_{i=0}^{510}c_iX^i$ over $\Z_q$. Since $\Phi_{257}\mid X^{257}-1$, first fold $p_i=\sum_{j+l\equiv i\ (257)}a_jb_l$ for $0\le i\le256$; then $ab\bmod\Phi_{257}$ has coefficients $p_i-p_{256}$ for $0\le i\le255$ (because $X^{256}\equiv-(X^{255}+\dots+1)$). Hence a ring multiplication is a length-$257$ cyclic convolution followed by $256$ subtractions.
 
 \section{Scheme}\label{sec:scheme}
-Fix $\eta=2$, module rank $k\in\{2,3,4\}$ and the modulus $q_k$ of Table~\ref{tab:params}: $q_2=2531$, $q_3=3329$, $q_4=3557$ (Section~\ref{sec:params}); we write $q$ for $q_k$. Let $\mathrm{Enc}_1(m)=\lceil q/2\rfloor\cdot m$ embed $m\in\{0,1\}^{256}$ coefficient-wise into $\Rq$ and $\mathrm{Dec}_1(x)_i=1$ iff the centered representative of $x_i$ lies in $[\lceil q/4\rceil,\lfloor 3q/4\rfloor]$.
+Fix $\eta=2$, module rank $k\in\{2,3,4\}$ and the modulus $q_k$ of Table~\ref{tab:params}: $q_2=2663$, $q_3=3329$, $q_4=3643$ (Section~\ref{sec:params}); we write $q$ for $q_k$. All moduli used are odd. Put $h=(q+1)/2$ and let $\mathrm{Enc}_1(m)=h\cdot m$ embed $m\in\{0,1\}^{256}$ coefficient-wise into $\Rq$. For $x\in\Rq$ let $\hat x_i\in\{0,\dots,q-1\}$ be the canonical representative of its $i$-th coefficient; then $\mathrm{Dec}_1(x)_i=1$ iff $\lceil q/4\rceil\le\hat x_i\le\lfloor 3q/4\rfloor$ (equivalently $q\le4\hat x_i<3q$).
 
 \paragraph{PKE.}
 \begin{itemize}[nosep]
@@ -79,23 +79,39 @@ Fix $\eta=2$, module rank $k\in\{2,3,4\}$ and the modulus $q_k$ of Table~\ref{ta
 \item $\mathsf{Enc}(pk,m;r)$: coins determine $r,e_1\leftarrow\chi^k$, $e_2\leftarrow\chi$; $u=A^{T}r+e_1$; $v=t^{T}r+e_2+\mathrm{Enc}_1(m)$. Output $(u,v)$.
 \item $\mathsf{Dec}(sk,(u,v))$: $m'=\mathrm{Dec}_1(v-s^{T}u)$.
 \end{itemize}
-\textbf{Correctness.} $v-s^{T}u=\mathrm{Enc}_1(m)+E$ with $E=e^{T}r+e_2-s^{T}e_1$; decryption succeeds iff every coefficient of $E$ has centered absolute value $<\lfloor q/4\rfloor$ (up to rounding of $q/2$).
+\textbf{Correctness.} $v-s^{T}u=\mathrm{Enc}_1(m)+E$ with $E=e^{T}r+e_2-s^{T}e_1$, where $E$ is computed with integer coefficients (before any reduction modulo $q$). By Lemma~\ref{lem:dec} below, a decoding error in coefficient $i$ forces $|E_i|\ge t_q$, where $t_q=\lfloor q/4\rfloor$ if $q\equiv1\pmod4$ and $t_q=\lceil q/4\rceil$ if $q\equiv3\pmod4$.
 
-\paragraph{KEM (FO with implicit rejection).} With hash functions $H,G$ modelled as random oracles and following \cite{HHK17}:
+\begin{lemma}[Decoding]\label{lem:dec}
+Let $q=4a+1$ or $q=4a+3$, $h=(q+1)/2$, $m\in\{0,1\}$, and let $E$ be an integer with $|E|\le(q-1)/2$. Then $\mathrm{Dec}_1(\mathrm{can}_q(hm+E))=m$ if and only if $E$ lies in the region
+\begin{center}\small\begin{tabular}{lcc}\toprule
+ & $q=4a+1$ & $q=4a+3$\\\midrule
+$m=0$ & $[-a,\,a]$ & $[-a,\,a]$\\
+$m=1$ & $[-a,\,a-1]$ & $[-a-1,\,a]$\\\bottomrule
+\end{tabular}\end{center}
+Consequently, if the decoding of a coefficient is wrong then $|E|\ge t_q$, with $t_q=a$ for $q=4a+1$ and $t_q=a+1$ for $q=4a+3$; this threshold is attained.
+\end{lemma}
+\begin{proof}
+In both cases $\lceil q/4\rceil=a+1$ and $\lfloor3q/4\rfloor-q=-(a+1)$; moreover $h=2a+1$ for $q=4a+1$ and $h=2a+2$ for $q=4a+3$.
+\emph{$m=0$.} If $E\ge0$ then $x=E$ and $\mathrm{Dec}_1(x)=0$ iff $E\le a$. If $E<0$ then $x=q+E$ and $\mathrm{Dec}_1(x)=0$ iff $q+E>\lfloor3q/4\rfloor$, i.e.\ $E\ge-a$.
+\emph{$m=1$.} The integer $u=h+E$ lies in $[1,q]$; for $u=q$ we get $x=0$ and an error, and $u=q>\lfloor3q/4\rfloor$ is excluded below anyway. Otherwise $x=u$, and $\mathrm{Dec}_1(x)=1$ iff $a+1\le h+E\le\lfloor3q/4\rfloor$, i.e.\ $a+1-h\le E\le\lfloor3q/4\rfloor-h$, which gives the stated intervals.
+For the consequence: if $|E|\le t_q-1$ then $|E|\le a-1$ ($q=4a+1$) or $|E|\le a$ ($q=4a+3$), so $E$ lies in both regions and the decoding is correct (also $|E|<q/2$, so no wraparound occurs). Equality is attained, e.g.\ for $m=1$, $E=a$ when $q=4a+1$, and for $m=0$, $E=a+1$ when $q=4a+3$.
+\end{proof}
+
+\paragraph{KEM ($\mathrm{FO}^{\not\perp}$).} Let $\mathcal M=\{0,1\}^{256}$, let $\mathcal R$ be the set of coin strings from which the sampler draws $(r,e_1,e_2)$ (we model the expansion of the coins into noise vectors as ideal), and let $G:\mathcal M\to\mathcal R$ and $H:\{0,1\}^{*}\to\{0,1\}^{256}$ be random oracles. This is the transformation $\mathrm{FO}^{\not\perp}=U^{\not\perp}\circ T$ of Hofheinz--H\"ovelmanns--Kiltz \cite{HHK17} applied to the PKE above (which never returns $\bot$):
 \begin{itemize}[nosep]
-\item $\mathsf{KeyGen}$: $(pk,s)\leftarrow\mathsf{PKE.KeyGen}$, $z\leftarrow\{0,1\}^{256}$; $sk_{\mathrm{KEM}}=(s,pk,H(pk),z)$.
-\item $\mathsf{Encaps}(pk)$: $m\leftarrow\{0,1\}^{256}$; $(\bar K,r)=G(m\,\|\,H(pk))$; $c=\mathsf{Enc}(pk,m;r)$; output $(c,\,K=H(\bar K\,\|\,H(c)))$.
-\item $\mathsf{Decaps}(sk,c)$: $m'=\mathsf{Dec}(s,c)$; $(\bar K',r')=G(m'\|H(pk))$; if $c=\mathsf{Enc}(pk,m';r')$ (constant-time comparison) return $H(\bar K'\|H(c))$, else return $H(z\|H(c))$ (implicit rejection, also in constant time).
+\item $\mathsf{KeyGen}$: $(pk,s)\leftarrow\mathsf{PKE.KeyGen}$, $z\leftarrow\mathcal M$; $sk_{\mathrm{KEM}}=(s,pk,z)$.
+\item $\mathsf{Encaps}(pk)$: $m\leftarrow\mathcal M$; $c=\mathsf{Enc}(pk,m;G(m))$; output $(c,\,K=H(m\,\|\,c))$.
+\item $\mathsf{Decaps}(sk,c)$: $m'=\mathsf{Dec}(s,c)$; if $\mathsf{Enc}(pk,m';G(m'))=c$ (constant-time comparison) return $H(m'\,\|\,c)$, else return $H(z\,\|\,c)$ (implicit rejection).
 \end{itemize}
-By \cite{HHK17}, IND-CCA2 security of this KEM in the random-oracle model follows from IND-CPA security of the PKE together with a sufficiently small decryption failure probability $\delta$; the explicit bound of \cite{HHK17} should be consulted for the concrete loss in terms of the number of oracle queries. We make no quantum-random-oracle claim.
+Practical hardenings (hashing the public key into $G$, deriving $K$ from a $G$-output and $H(c)$, as in Kyber) are standard against multi-target attacks; they are \emph{not} covered by Theorem~\ref{thm:cca} below and we make no claim for them.
 
-\paragraph{Sizes (no compression).} All three moduli are below $4096$, so $12$-bit packing applies: $|pk|=384k+32$ B, $|c|=384(k+1)$ B, $|sk_{\mathrm{KEM}}|=384k+|pk|+64$ B.
+\paragraph{Sizes (no compression).} All three moduli are below $4096$, so $12$-bit packing applies: $|pk|=384k+32$ B, $|c|=384(k+1)$ B, $|sk_{\mathrm{KEM}}|=384k+|pk|+32$ B.
 \begin{table}[h]\centering
 \begin{tabular}{lrrrrrr}\toprule
 Set & $k$ & $n=256k$ & $q$ & $|pk|$ & $|c|$ & $|sk_{\mathrm{KEM}}|$\\\midrule
-CLH-MAX-512 & 2 & 512 & 2531 & 800 & 1152 & 1632\\
-CLH-MAX-768 & 3 & 768 & 3329 & 1184 & 1536 & 2400\\
-CLH-MAX-1024 & 4 & 1024 & 3557 & 1568 & 1920 & 3168\\\bottomrule
+CLH-MAX-512 & 2 & 512 & 2663 & 800 & 1152 & 1600\\
+CLH-MAX-768 & 3 & 768 & 3329 & 1184 & 1536 & 2368\\
+CLH-MAX-1024 & 4 & 1024 & 3643 & 1568 & 1920 & 3136\\\bottomrule
 \end{tabular}
 \caption{Parameter sets and sizes in bytes; $\eta=2$, no ciphertext compression.}\label{tab:params}
 \end{table}
@@ -120,7 +136,20 @@ is an MLWE sample with secret $r$ and $k+1$ rows. $\mathcal B_2$, given $(B,w)$,
 The theorem is a relative statement. It does \emph{not} give $\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}=0$: an unbounded adversary recovers $s$ from $(A,t)$ (the support of $(s,e)$ is far smaller than $q^{256k}$), so no sound assumption can set the MLWE advantage of \emph{all} distinguishers to zero. Security is computational and rests on the hardness of MLWE for efficient adversaries. Any mechanised proof should formalise the inequality of Theorem~\ref{thm:cpa}, not an unconditional-hardness axiom.
 \end{remark}
 
-\paragraph{Worst-case reductions.} Lyubashevsky--Peikert--Regev \cite{LPR13} give a quantum reduction from approximate worst-case SVP on ideal lattices to RLWE for \emph{any} cyclotomic field, hence including $\mathbb{Q}(\zeta_{257})$, but for discrete Gaussian errors in the canonical embedding with width $\alpha q\ge\omega(\sqrt{\log n})$ and with moduli and approximation factors that are polynomial in $n$ with non-trivial exponents. The parameters used here ($q\le3557$, centered binomial $\eta=2$, $n=256$) lie outside that regime, exactly as for ML-KEM, so the reductions provide asymptotic motivation only and no concrete bits of security. Moreover, for prime-power cyclotomic fields (which includes conductor $257$) there are quantum algorithms for ideal-SVP with approximation factors $\exp(\tilde O(\sqrt n))$ in certain settings \cite{CDPR16,CDW17}; these do not break RLWE at the parameters considered, but they caution against reading worst-case statements as guarantees.
+\begin{theorem}[IND-CCA2 in the random-oracle model]\label{thm:cca}
+Let $\delta$ be any value for which Theorem~\ref{thm:chernoff} gives $\Pr[\exists i:\,|E_i|\ge t_q]\le\delta$ (for the parameter sets of this paper, the certified values of Table~\ref{tab:cert}). For every IND-CCA adversary $\mathcal B$ against the KEM above that makes at most $q_{RO}$ queries in total to $G$ and $H$ (counting the queries made implicitly in the experiment) there are distinguishers $\mathcal B_1,\mathcal B_2$ of about the same running time such that
+\[
+\mathrm{Adv}^{\mathrm{IND\text{-}CCA}}(\mathcal B)\;\le\; q_{RO}\,\delta+\frac{3q_{RO}}{2^{256}}+3\Big(\mathrm{Adv}^{\mathrm{MLWE}}_{k,k,\chi}(\mathcal B_1)+\mathrm{Adv}^{\mathrm{MLWE}}_{k+1,k,\chi}(\mathcal B_2)\Big).
+\]
+\end{theorem}
+\begin{proof}
+This is the concrete bound of \cite[Section~3.3]{HHK17} for $\mathrm{KEM}^{\not\perp}=\mathrm{FO}^{\not\perp}[\mathrm{PKE},G,H]$ in its IND-CPA form (combining their Theorems~3.2 and~3.4; we use the revised version of November 2021, which corrects counting errors of earlier versions), instantiated as follows. \emph{(i) IND-CPA security:} by Theorem~\ref{thm:cpa}, $\mathrm{Adv}^{\mathrm{IND\text{-}CPA}}_{\mathrm{PKE}}\le\mathrm{Adv}^{\mathrm{MLWE}}_{k,k,\chi}+\mathrm{Adv}^{\mathrm{MLWE}}_{k+1,k,\chi}$ (the definitions of the game agree: bit-guessing advantage). \emph{(ii) Correctness:} \cite{HHK17} call a PKE $\delta$-correct if $\mathbb E_{(pk,sk)}\big[\max_{m\in\mathcal M}\Pr[\mathsf{Dec}(sk,\mathsf{Enc}(pk,m))\ne m]\big]\le\delta$. For fixed keys and any $m$, by Lemma~\ref{lem:dec} a decoding error requires $|E_i|\ge t_q$ for some coefficient $i$; the probability over the coins of this event does not depend on $m$, so it bounds the maximum over $m$. Taking the expectation over the keys $(s,e)$ gives $\Pr[\exists i:\,|E_i|\ge t_q]\le\delta$, where the probability is over keys and coins jointly, as in Theorem~\ref{thm:chernoff} ($E_i$ does not depend on the matrix $A$). \emph{(iii)} $|\mathcal M|=2^{256}$, and $G$ ranges over the coin space.
+\end{proof}
+\begin{remark}[What the theorem says about the security level]
+\cite{HHK17} state that $\kappa$ bits of security require $\delta\le2^{-\kappa}$. The certified values ($2^{-134.57}$, $2^{-143.95}$, $2^{-131.17}$ for $k=2,3,4$) therefore limit what this theorem can support through the correctness term to about $134$, $143$ and $131$ bits; we do not assign security levels. The theorem is in the classical random-oracle model: the quantum random-oracle results of \cite{HHK17} concern a variant with an additional hash $d$ in the ciphertext, which we do not use, so we make no claim in the QROM. It also gives no statement about the hardness of Module-LWE over $\Rq$ itself.
+\end{remark}
+
+\paragraph{Worst-case reductions.} Lyubashevsky--Peikert--Regev \cite{LPR13} give a quantum reduction from approximate worst-case SVP on ideal lattices to RLWE for \emph{any} cyclotomic field, hence including $\mathbb{Q}(\zeta_{257})$, but for discrete Gaussian errors in the canonical embedding with width $\alpha q\ge\omega(\sqrt{\log n})$ and with moduli and approximation factors that are polynomial in $n$ with non-trivial exponents. The parameters used here ($q\le3643$, centered binomial $\eta=2$, $n=256$) lie outside that regime, exactly as for ML-KEM, so the reductions provide asymptotic motivation only and no concrete bits of security. Moreover, for prime-power cyclotomic fields (which includes conductor $257$) there are quantum algorithms for ideal-SVP with approximation factors $\exp(\tilde O(\sqrt n))$ in certain settings \cite{CDPR16,CDW17}; these do not break RLWE at the parameters considered, but they caution against reading worst-case statements as guarantees.
 
 \paragraph{Concrete security.} Attacks on (M)LWE (primal uSVP, BDD, dual, hybrid) as implemented in the lattice-estimator \cite{APS15} see only the instance parameters $(n,m,q,\chi_s,\chi_e)$; they do not depend on the ring structure. We ran \texttt{LWE.estimate} (default settings, October 2026) on two instances per parameter set: \emph{key recovery} ($n=256k$, $m=n$, secret and error $\psi_2$) and \emph{message recovery} (secret $r$, errors $(e_1,e_2)$: $n=256k$, $m=256(k+1)$), and, with the same call, on the corresponding ML-KEM instances (ML-KEM-512: $\psi_3$ secret and error for key recovery, $\psi_3$ secret and $\psi_2$ error for message recovery). Table~\ref{tab:est} reports the output unchanged.
 \begin{table}[h]\centering\small\setlength{\tabcolsep}{4pt}
@@ -128,18 +157,18 @@ The theorem is a relative statement. It does \emph{not} give $\mathrm{Adv}^{\mat
 Scheme & Instance & BKW & uSVP & BDD & Dual & DH & $\beta_{\mathrm{DH}}$\\\midrule
 ML-KEM-512 & key ($m{=}512$) & 178.8 & 143.8 & 140.2 & 149.9 & 139.7 & 387\\
 ML-KEM-512 & message ($m{=}768$) & 178.8 & 149.6 & 144.9 & 146.2 & 136.6 & 376\\
-CLH-512 (2531) & key & 173.0 & 141.5 & 137.9 & 147.6 & 136.8 & 374\\
-CLH-512 (2531) & message & 172.9 & 141.5 & 137.9 & 147.6 & 136.8 & 374\\\midrule
+CLH-512 (2663) & key & 173.9 & 140.7 & 137.1 & 146.7 & 136.2 & 371\\
+CLH-512 (2663) & message & 173.9 & 140.7 & 137.1 & 146.7 & 136.2 & 371\\\midrule
 ML-KEM-768 = CLH-768 (3329) & key & 238.3 & 204.9 & 201.0 & 214.3 & 196.4 & 589\\
 ML-KEM-768 = CLH-768 (3329) & message & 238.1 & 204.9 & 201.0 & 214.3 & 196.4 & 589\\\midrule
 ML-KEM-1024 & key & 315.0 & 275.1 & 270.7 & 288.5 & 262.3 & 823\\
 ML-KEM-1024 & message & 310.5 & 275.1 & 270.7 & 288.5 & 262.3 & 823\\
-CLH-1024 (3557) & key & 311.2 & 273.2 & 268.8 & 286.4 & 260.4 & 817\\
-CLH-1024 (3557) & message & 311.1 & 273.2 & 268.8 & 286.4 & 260.4 & 817\\\bottomrule
+CLH-1024 (3643) & key & 311.9 & 272.3 & 268.1 & 285.5 & 259.2 & 813\\
+CLH-1024 (3643) & message & 311.9 & 272.3 & 268.1 & 285.5 & 259.2 & 813\\\bottomrule
 \end{tabular}
 \caption{lattice-estimator output, $\log_2$(operations); one call and one cost model for all rows. DH = dual hybrid, the cheapest attack in every row. For $k=3$ the instances are literally identical for CLH-MAX and ML-KEM.}\label{tab:est}
 \end{table}
-For ML-KEM-512 the message-recovery instance is the weakest ($2^{136.6}$, dual hybrid), cheaper than key recovery ($2^{139.7}$). Taking for each scheme the cheapest attack over both instances: for $k=2$, CLH-MAX-512 gives $2^{136.8}$ against $2^{136.6}$ for ML-KEM-512 ($+0.2$ bits); for $k=3$ both give $2^{196.4}$; for $k=4$, CLH-MAX-1024 gives $2^{260.4}$ against $2^{262.3}$ for ML-KEM-1024 ($-1.9$ bits). For CLH-MAX the two instances coincide up to rounding, because secret and error share the same distribution. We draw no ranking conclusion from differences of this size: in this model CLH-MAX matches ML-KEM to within about two bits, and the ring itself plays no role in the estimates. Limitations: the estimates are for generic MLWE, they use the independence of the coordinates of $(s,e)$ built into the estimator, and we assign no NIST category. Known structural attacks (subfield attacks on overstretched NTRU \cite{ABD16,CJL16}) target large-modulus NTRU-type instances and are not known to apply to MLWE at these moduli in either ring; Remark~\ref{rem:sub} explains why the field structure of $\Rq$ is not obviously free of exploitable structure.
+For ML-KEM-512 the message-recovery instance is the weakest ($2^{136.6}$, dual hybrid), cheaper than key recovery ($2^{139.7}$). Taking for each scheme the cheapest attack over both instances: for $k=2$, CLH-MAX-512 gives $2^{136.2}$ against $2^{136.6}$ for ML-KEM-512 ($-0.4$ bits); for $k=3$ both give $2^{196.4}$; for $k=4$, CLH-MAX-1024 gives $2^{259.2}$ against $2^{262.3}$ for ML-KEM-1024 ($-3.1$ bits). We draw no ranking conclusion from differences of this size: in this model CLH-MAX is within about three bits of ML-KEM, and the ring itself plays no role in the estimates. Limitations: the estimates are for generic MLWE, they use the independence of the coordinates of $(s,e)$ built into the estimator, and we assign no NIST category. Known structural attacks (subfield attacks on overstretched NTRU \cite{ABD16,CJL16}) target large-modulus NTRU-type instances and are not known to apply to MLWE at these moduli in either ring; Remark~\ref{rem:sub} explains why the field structure of $\Rq$ is not obviously free of exploitable structure.
 
 \section{Ring-specific security considerations}\label{sec:ringsec}
 The estimates of Section~\ref{sec:sec} are generic and do not see the ring. This section checks the hypotheses of the known attacks on RLWE/PLWE that do exploit the ring. It does not prove hardness; it shows which known attack families do not apply, and why.
@@ -151,7 +180,7 @@ Let $q$ be a prime with $\mathrm{ord}_{257}(q)=256$. Every ring homomorphism fro
 The kernel of a unital ring homomorphism out of a field is a proper ideal, hence zero. The image is then a subfield of $F$ with $q^{256}$ elements.
 \end{proof}
 
-\paragraph{Homomorphism-based attacks.} The attacks of Eisentr\"ager--Hallgren--Lauter \cite{EHL14}, Elias--Lauter--Ozman--Stange \cite{ELOS15} and Chen--Lauter--Stange \cite{CLS17} map RLWE samples through a ring homomorphism $\phi:\Rq\to F$ to a finite field, enumerate the possible images $\phi(s)$ and test whether the pushed-forward errors are detectably non-uniform. By \cite{CLS17}, this requires that $F$ be small enough to be enumerated, and the only ring homomorphisms from $\Rq$ to a finite field are reductions modulo primes above $q$. For our moduli the ideal $q\mathcal{O}_K$ is prime with residue degree $f=256$ (Proposition~\ref{prop:irr}), so by Proposition~\ref{prop:nohom} the only available $F$ is $\Rq$ itself and the enumeration covers all $q^{256}$ possible secrets. The running time $O(nq^{2f})$ stated in \cite{CLS17} is then about $2^{5800}$ for $q=2531$, $2^{6000}$ for $q=3329$ and $2^{6050}$ for $q=3557$. The earlier attacks \cite{EHL14,ELOS15} additionally need a root of the defining polynomial modulo $q$ (a prime of residue degree one), of small order; $\Phi_{257}$ has no root modulo $q$ because it is irreducible of degree $256$, and $\Phi_{257}(1)=257\not\equiv0\pmod q$.
+\paragraph{Homomorphism-based attacks.} The attacks of Eisentr\"ager--Hallgren--Lauter \cite{EHL14}, Elias--Lauter--Ozman--Stange \cite{ELOS15} and Chen--Lauter--Stange \cite{CLS17} map RLWE samples through a ring homomorphism $\phi:\Rq\to F$ to a finite field, enumerate the possible images $\phi(s)$ and test whether the pushed-forward errors are detectably non-uniform. By \cite{CLS17}, this requires that $F$ be small enough to be enumerated, and the only ring homomorphisms from $\Rq$ to a finite field are reductions modulo primes above $q$. For our moduli the ideal $q\mathcal{O}_K$ is prime with residue degree $f=256$ (Proposition~\ref{prop:irr}), so by Proposition~\ref{prop:nohom} the only available $F$ is $\Rq$ itself and the enumeration covers all $q^{256}$ possible secrets. The running time $O(nq^{2f})$ stated in \cite{CLS17} is then about $2^{5830}$ for $q=2663$, $2^{6000}$ for $q=3329$ and $2^{6070}$ for $q=3643$. The earlier attacks \cite{EHL14,ELOS15} additionally need a root of the defining polynomial modulo $q$ (a prime of residue degree one), of small order; $\Phi_{257}$ has no root modulo $q$ because it is irreducible of degree $256$, and $\Phi_{257}(1)=257\not\equiv0\pmod q$.
 
 \paragraph{Subfield vulnerability.} \cite{CLS17} identify a vulnerability when many elements of the basis lie in a proper subfield $K'$ of the field in which $q$ has smaller residue degree. In the power basis of $\mathbb{Q}(\zeta_{257})$, for $1\le i\le256$ the element $\zeta^i$ generates the whole field (257 is prime), and modulo $q$ each $\zeta^i$ is a root of $\Phi_{257}$, hence has degree $256$ over $\F_q$ (the $q$-th powers of $\zeta$ run over all $\zeta^i$ because $q$ generates $(\Z/257)^{*}$). Only the constant term $1$ lies in a proper subfield, one basis element out of $256$.
 
@@ -167,17 +196,47 @@ For $a,b\in\Rq$ with independent coefficients, every coefficient of $ab\in\Rq$ i
 \end{lemma}
 \noindent The proof is a direct count of index pairs (Appendix~\ref{app:count}). This is roughly twice the $256$ terms of a negacyclic product, so the variance of a product coefficient is about $2\sigma^4\cdot256$ rather than $256\sigma^4$.
 
-For module rank $k$, the coefficient $E_i$ of $e^{T}r-s^{T}e_1+e_2$ is therefore a sum of $2k\cdot511$ products of two independent $\psi_2$ samples (a conservative count) plus one $\psi_2$ sample, with variance $\sigma_E^2=1022k+1$. Following the usual heuristic of treating the summands as independent, we compute the \emph{exact} distribution by convolution and bound $\delta\le 256\cdot\Pr[|E_i|\ge\lfloor q/4\rfloor]$. The script is in Appendix~\ref{app:script}.
+For module rank $k$, the coefficient $E_i$ of $e^{T}r-s^{T}e_1+e_2$ is a sum of $2k\cdot511$ products of two independent $\psi_2$ samples (a conservative count) plus one $\psi_2$ sample, with variance $\sigma_E^2=1022k+1$. By Lemma~\ref{lem:dec}, $\delta\le\sum_{i}\Pr[|E_i|\ge t_q]$. \emph{Heuristic estimate:} treating the summands as independent, we compute the exact distribution by convolution and use $\delta\lesssim256\cdot\Pr[|E_i|\ge t_q]$ (script \texttt{dfp.py}):
 \begin{table}[h]\centering
 \begin{tabular}{lrrrrrr}\toprule
-Set & $k$ & $q$ & $\lfloor q/4\rfloor$ & $\sigma_E^2$ & $\log_2\Pr[|E_i|\ge\lfloor q/4\rfloor]$ & $\log_2\delta$\\\midrule
-CLH-MAX-512 & 2 & 2531 & 632 & 2045 & $-141.5$ & $-133.5$\\
+Set & $k$ & $q$ & $t_q$ & $\sigma_E^2$ & $\log_2\Pr[|E_i|\ge t_q]$ & $\log_2\delta$ (heuristic)\\\midrule
+CLH-MAX-512 & 2 & 2663 & 666 & 2045 & $-156.4$ & $-148.4$\\
 CLH-MAX-768 & 3 & 3329 & 832 & 3067 & $-163.9$ & $-155.9$\\
-CLH-MAX-1024 & 4 & 3557 & 889 & 4089 & $-141.7$ & $-133.7$\\\bottomrule
+CLH-MAX-1024 & 4 & 3643 & 911 & 4089 & $-148.6$ & $-140.6$\\\bottomrule
 \end{tabular}
-\caption{Decryption failure probability, no ciphertext compression, $\eta=2$.}\label{tab:dfp}
+\caption{Heuristic estimate of the decryption failure probability, no ciphertext compression, $\eta=2$.}\label{tab:dfp}
 \end{table}
-All three sets satisfy $\delta<2^{-128}$ with a margin of at least $5$ bits under this heuristic. A rigorous bound would have to account for the dependence between products that share a factor; we do not provide one.
+This estimate rests on an independence assumption between products that share a factor, which is false, so it is \emph{not} a bound. We therefore also derive a bound that needs no such assumption.
+
+\begin{theorem}[Chernoff bound with exact moment generating function]\label{thm:chernoff}
+Let $\eta=2$, extend $e$ by $e'_j=e_j$ for $0\le j\le255$ and $e'_{256}=0$, and for $0\le i\le255$ put $s=i+1$, $b_l=256-l$ and $c^{(i)}_l=e'_{(b_l+s)\bmod257}-e'_{b_l}$. For $\lambda>0$ let
+\[
+M_1^{(i)}(\lambda)=\mathbb E_e\Big[\prod_{l=0}^{255}\cosh\!\big(\lambda c^{(i)}_l/2\big)^{2\eta}\Big].
+\]
+Then, for every $\lambda>0$,
+\[
+\delta\;\le\;2\sum_{i=0}^{255}\exp\!\Big(-\lambda t_q+2k\ln M_1^{(i)}(\lambda)+2\eta\ln\cosh(\lambda/2)\Big).
+\]
+\end{theorem}
+\begin{proof}
+By the folding rule, the coefficient $i$ of $er$ in $\Z[X]/\Phi_{257}$ is $p_i-p_{256}$ with $p_j=\sum_{a+l\equiv j\,(257)}e'_ar_l$ over $0\le l\le255$; hence it equals $\sum_{l=0}^{255}c_lr_l$ with $c_l=e'_{(i-l)\bmod257}-e'_{(256-l)\bmod257}$, which is the stated expression because $i-l\equiv b_l+s\pmod{257}$. Given $e$, the $r_l$ are independent, and for an integer $c$ one has $\mathbb E[e^{\lambda c\,r_l}]=\cosh(\lambda c/2)^{2\eta}$ (each summand of the centered binomial has moment generating function $\cosh^2(x/2)$). Averaging over $e$ gives $M_1^{(i)}(\lambda)$ exactly, with no independence assumption between the coefficients of the product. The $2k$ products in $E$ use independent pairs of polynomials and are independent of $e_2$, whose moment generating function is $\cosh(\lambda/2)^{2\eta}$, so $\mathbb E[e^{\lambda E_i}]=M_1^{(i)}(\lambda)^{2k}\cosh(\lambda/2)^{2\eta}$. The distribution of $E_i$ is symmetric, so Chernoff's inequality bounds both tails by the same quantity, and the union bound over the $256$ coefficients does not require independence between them. Finally Lemma~\ref{lem:dec} gives $\delta\le\sum_i\Pr[|E_i|\ge t_q]$.
+\end{proof}
+\noindent \emph{Computing $M_1^{(i)}$.} The indices $x_t=ts\bmod257$ ($t=1,\dots,257$) run through all residues, and the $c_l$ are the differences $e'_{x_{t+1}}-e'_{x_t}$ along this path for $t=1,\dots,256$, with $x_{257}=0$. The node with index $256$ is fixed to $0$; the other $256$ nodes are independent $\psi_2$ samples. The expectation is therefore a product of $5\times5$ transfer matrices with entries $\cosh(\lambda(v-u)/2)^4$, computed exactly.
+
+\emph{Certified evaluation.} For each parameter set we fixed a dyadic rational $\lambda$ and evaluated the bound with interval arithmetic (script \texttt{certified\_dfp.py}, \texttt{mpmath.iv}, outward rounding; the float64 script \texttt{rigorous\_dfp.py} agrees to within $0.02$ bits, and an independent evaluation with exact rational arithmetic, script \texttt{exact\_dfp\_check.py}, confirms $\delta\le2^{-134},2^{-143},2^{-131}$ for the three chosen sets). Table~\ref{tab:cert} gives the upper end of the interval.
+\begin{table}[h]\centering\small
+\begin{tabular}{rrrrrl}\toprule
+$k$ & $q$ & $t_q$ & $\lambda$ & certified $\log_2\delta\le$ & margin to $-128$\\\midrule
+2 & 2663 & 666 & 0.2734 & $-134.57$ & 6.6 bits\\
+3 & 3329 & 832 & 0.2383 & $-143.95$ & 15.9 bits\\
+4 & 3643 & 911 & 0.2031 & $-131.17$ & 3.2 bits\\\midrule
+4 & 3617 & 904 & 0.2031 & $-129.12$ & 1.1 bits (thin margin)\\
+2 & 2531 & 633 & 0.2656 & $-121.65$ & fails\\
+4 & 3557 & 889 & 0.1992 & $-124.75$ & fails\\\bottomrule
+\end{tabular}
+\caption{Certified upper bounds on the decryption failure probability (no ciphertext compression, $\eta=2$). The last two rows are the moduli of the previous version, which satisfy $\delta<2^{-128}$ only under the independence heuristic.}\label{tab:cert}
+\end{table}
+The rigorous bound is $9$ to $14$ bits weaker than the heuristic estimate; part of the difference is the usual slack of Chernoff's inequality and part is the positive dependence between products that share a factor, which the heuristic ignores. The true $\delta$ lies between the two. For the claim $\delta<2^{-128}$ we rely on the certified bound; its margin is $3.2$ bits for $k=4$. The bound concerns the failure probability of the PKE with honestly generated keys and ciphertexts and ideal sampling of the noise; it is not a statement about the security of the construction.
 
 \paragraph{Empirical validation of the model.} To test the independence heuristic we sampled $E=e^{T}r-s^{T}e_1+e_2$ in $\Z[X]/\Phi_{257}$ directly ($7.7\cdot10^{7}$ coefficients for $k=2$, $3.8\cdot10^{7}$ for $k=4$) and compared the empirical tail $\Pr[|E_i|\ge t]$ with the exact distribution of this section (script \texttt{validate\_dfp.py}). Table~\ref{tab:mc} shows selected rows.
 \begin{table}[h]\centering\small
@@ -194,61 +253,78 @@ $k$ & $t$ & $t/\sigma_E$ & empirical & predicted & ratio\\\midrule
 \end{tabular}
 \caption{Empirical versus predicted tail of $|E_i|$ ($\eta=2$, $\sigma_E=\sqrt{1022k+1}$).}\label{tab:mc}
 \end{table}
-Empirical and predicted tails agree to within $1\%$ up to about $3.5\,\sigma_E$ (probabilities down to about $10^{-3}$). In the far tail ($4$--$4.6\,\sigma_E$) the ratio lies between $0.94$ and $1.08$, which is compatible with sampling noise (the $256$ coefficients of one sample are correlated, so event counts understate the sampling error), but a small excess for $k=2$ cannot be excluded. If it were real, it would be equivalent to an inflation of the variance of about $1\%$, which at the operating points ($t/\sigma_E\approx14$) would cost about one bit in $\log_2\delta$, below the margin of Table~\ref{tab:dfp}. The simulation cannot reach the operating points themselves, so a rigorous bound remains open.
+Empirical and predicted tails agree to within $1\%$ up to about $3.5\,\sigma_E$ (probabilities down to about $10^{-3}$). In the far tail ($4$--$4.6\,\sigma_E$) the ratio lies between $0.94$ and $1.08$, which is compatible with sampling noise (the $256$ coefficients of one sample are correlated, so event counts understate the sampling error), but a small excess for $k=2$ cannot be excluded. The simulation cannot reach the operating points ($t_q/\sigma_E\approx14$), and the heuristic is optimistic there, as the rigorous bound above shows; we therefore base the parameter choice on the rigorous bound.
 
-\paragraph{Ciphertext compression.} ML-KEM compresses $u$ and $v$ to $d_u$ and $d_v$ bits, which adds rounding noise to the decryption error. Modelling the rounding error as the exact error of Compress and Decompress over uniform $x\in\Z_q$, independent of the rest, we computed $\delta$ with the compression parameters of ML-KEM and some finer ones (script \texttt{compression\_\allowbreak dfp.py}). Table~\ref{tab:comp} shows selected rows.
+\paragraph{Ciphertext compression.} ML-KEM compresses $u$ and $v$ to $d_u$ and $d_v$ bits, which adds rounding noise to the decryption error. Modelling the rounding error as the exact error of Compress and Decompress over uniform $x\in\Z_q$, independent of the rest, we computed the \emph{heuristic} $\delta$ with the compression parameters of ML-KEM and some finer ones (script \texttt{compression\_\allowbreak dfp.py}). Table~\ref{tab:comp} shows selected rows.
 \begin{table}[h]\centering\small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{rrrrrr}\toprule
-$k$ & $q$ & $(d_u,d_v)$ & $|c|$ (B) & ML-KEM $|c|$ (B) & $\log_2\delta$\\\midrule
-2 & 2531 & (10,4) & 768 & 768 & $-83.0$\\
-2 & 2531 & (11,6) & 896 & 768 & $-117.8$\\
-2 & 2531 & none & 1152 & 768 & $-133.5$\\\midrule
+$k$ & $q$ & $(d_u,d_v)$ & $|c|$ (B) & ML-KEM $|c|$ (B) & $\log_2\delta$ (heuristic)\\\midrule
+2 & 2663 & (10,4) & 768 & 768 & $-91.6$\\
+2 & 2663 & (11,6) & 896 & 768 & $-128.5$\\
+2 & 2663 & none & 1152 & 768 & $-148.4$\\\midrule
 3 & 3329 & (10,4) & 1088 & 1088 & $-85.5$\\
 3 & 3329 & (11,6) & 1248 & 1088 & $-126.1$\\
 3 & 3329 & none & 1536 & 1088 & $-155.9$\\\midrule
-4 & 3557 & (11,5) & 1568 & 1568 & $-100.4$\\
-4 & 3557 & (11,6) & 1600 & 1568 & $-106.3$\\
-4 & 3557 & none & 1920 & 1568 & $-133.7$\\\bottomrule
+4 & 3643 & (11,5) & 1568 & 1568 & $-105.0$\\
+4 & 3643 & (11,6) & 1600 & 1568 & $-111.1$\\
+4 & 3643 & none & 1920 & 1568 & $-140.6$\\\bottomrule
 \end{tabular}
-\caption{Decryption failure probability with ciphertext compression ($\eta=2$).}\label{tab:comp}
+\caption{Heuristic decryption failure probability with ciphertext compression ($\eta=2$).}\label{tab:comp}
 \end{table}
-With ML-KEM's own compression parameters $\delta$ is far above $2^{-128}$, and none of the settings tried reaches $2^{-128}$ except the uncompressed one. The uncompressed ciphertexts are therefore $50\%$, $41\%$ and $22\%$ larger than ML-KEM's for $k=2,3,4$. Intermediate settings were not explored exhaustively.
+With ML-KEM's own compression parameters $\delta$ is far above $2^{-128}$. The only compressed setting that reaches $2^{-128}$ even under the heuristic is $(11,6)$ for $k=2$ ($-128.5$), with no margin and, given that the heuristic is optimistic by $9$--$14$ bits, not under the rigorous bound. The uncompressed ciphertexts are therefore $50\%$, $41\%$ and $22\%$ larger than ML-KEM's for $k=2,3,4$. Intermediate settings were not explored exhaustively.
 
 \section{Parameter selection}\label{sec:params}
-Two effects pull in opposite directions. Decreasing $q$ with fixed $\psi_2$ noise increases the cost of lattice attacks, but it also shrinks the decoding threshold $\lfloor q/4\rfloor$ and hence increases $\delta$. Because of Lemma~\ref{lem:count} the variance of a product coefficient is about twice that of a negacyclic ring, so with the ML-KEM modulus $q=3329$ the rank-4 set has $\delta\approx2^{-117}$, and raising the key noise of the rank-2 set to ML-KEM-512's $\eta_1=3$ (with $r\leftarrow\psi_3$, $e_1,e_2\leftarrow\psi_2$) gives $\delta\approx2^{-123}$; neither meets $2^{-128}$. We therefore scanned all primes $2000<q<20000$ with $\mathrm{ord}_{257}(q)=256$, for $k\in\{2,4\}$ and $\eta\in\{2,3\}$, using (a) a primal-attack estimate of the uSVP block size, which reproduces exactly the four uSVP block sizes of our reference estimator runs, and (b) a Chernoff bound on $\delta$ (conservative, about $5$ bits above the exact value). The finalists were then confirmed with the lattice-estimator and with the exact computation of Section~\ref{sec:dfp}:
+Two effects pull in opposite directions. Decreasing $q$ with fixed $\psi_2$ noise increases the cost of lattice attacks, but it also shrinks the decoding threshold $t_q$ and hence increases $\delta$. Because of Lemma~\ref{lem:count} the variance of a product coefficient is about twice that of a negacyclic ring, so with the ML-KEM modulus $q=3329$ the rank-4 set has $\delta\approx2^{-117}$ (heuristic; $2^{-108.7}$ by the Chernoff bound), and raising the key noise of the rank-2 set to ML-KEM-512's $\eta_1=3$ gives a heuristic $\delta\approx2^{-123}$; neither meets $2^{-128}$. We therefore scanned the primes $2000<q<20000$ with $\mathrm{ord}_{257}(q)=256$ using (a) a primal-attack estimate of the uSVP block size, which reproduces exactly the uSVP block sizes of our reference estimator runs for symmetric noise, and (b) the bound of Theorem~\ref{thm:chernoff} (in its float64 form) for the failure probability. Selected candidates, confirmed with the lattice-estimator on key and message recovery:
 \begin{table}[h]\centering\small
-\begin{tabular}{rrrrrr}\toprule
-$k$ & $q$ & $\beta_{\mathrm{uSVP}}$ & DH (key) & $\log_2\delta$ & status\\\midrule
-2 & 3329 & 382 & 132.8 & $-231.0$ & superseded\\
-2 & \textbf{2531} & 398 & 136.8 & $-133.5$ & \textbf{chosen}\\
-2 & 2663 & 395 & 136.2 & $-148.0$ & alternative\\\midrule
-4 & 3329 & 874 & 262.3 & $-116.7$ & fails $\delta$\\
-4 & \textbf{3557} & 867 & 260.4 & $-133.7$ & \textbf{chosen}\\
-4 & 3617 & 865 & 259.5 & $-138.4$ & alternative\\\bottomrule
+\begin{tabular}{rrrrrl}\toprule
+$k$ & $q$ & certified $\log_2\delta\le$ & weakest DH & vs.\ ML-KEM & status\\\midrule
+2 & 2531 & $-121.65$ & 136.8 & $+0.2$ & fails $\delta$\\
+2 & \textbf{2663} & $-134.57$ & 136.2 & $-0.4$ & \textbf{chosen}\\
+4 & 3329 & $-108.7^{\dagger}$ & 262.3 & $0.0$ & fails $\delta$\\
+4 & 3557 & $-124.75$ & 260.4 & $-1.9$ & fails $\delta$\\
+4 & 3617 & $-129.12$ & 259.5 & $-2.8$ & margin $1.1$ bits\\
+4 & \textbf{3643} & $-131.17$ & 259.2 & $-3.1$ & \textbf{chosen}\\\bottomrule
 \end{tabular}
-\caption{Candidate moduli ($\eta=2$). For the alternatives only the key-recovery instance was run with the estimator. DH = dual hybrid, $\log_2$ operations.}
+\caption{Candidate moduli ($\eta=2$). Weakest DH: dual-hybrid cost ($\log_2$ operations) of the weaker of the key- and message-recovery instances, from the lattice-estimator; the reference is the weakest ML-KEM instance ($136.6$ for $k=2$, $262.3$ for $k=4$). $^{\dagger}$float64 evaluation, not certified.}\label{tab:cands}
 \end{table}
-For $k=3$, $q=3329$ already matches ML-KEM-768 and gives $\delta\approx2^{-156}$, so it is kept. For $k=2,4$ we choose the smaller modulus, which keeps at least $5$ bits of margin in $\delta$ and is closest to ML-KEM in the estimator; the larger alternatives give up about one bit of security for $5$--$15$ additional bits of margin. The choice is a judgement, not an optimum, and a different weighting of the two criteria is equally defensible.
+For $k=3$, $q=3329$ matches ML-KEM-768 and gives a certified $\delta\le2^{-143.95}$, so it is kept. For $k=2$ smaller moduli also satisfy the bound (the smallest in our scan is $2609$, with a margin of one bit); we choose $2663$ because it was run with the estimator and has a margin of $6.6$ bits. For $k=4$, $3617$ is the smallest modulus that satisfies the bound, with a margin of only $1.1$ bits; we choose $3643$, whose margin is $3.2$ bits at a cost of $0.3$ bits of security. The choice is a judgement and a different weighting of margin and security is equally defensible.
+
+\paragraph{Asymmetric noise.} ML-KEM-512 uses $\eta_1=3$ for $s,e,r$ and $\eta_2=2$ for $e_1,e_2$. We generalised Theorem~\ref{thm:chernoff} to noise $\psi_{\eta_1}$ for $s,e,r$ and $\psi_{\eta_2}$ for $e_1,e_2$ (script \texttt{asym\_search.py}), took for each $(k,\eta_1,\eta_2)$ the smallest valid modulus with bound $\le2^{-131}$ (float64), and ran the lattice-estimator on key and message recovery for a shortlist (script \texttt{estimate\_batch.py}). Table~\ref{tab:asym} gives the results.
+\begin{table}[h]\centering\small
+\begin{tabular}{rrrrrrr}\toprule
+$k$ & $(\eta_1,\eta_2)$ & $q$ & DH key & DH message & weakest & vs.\ ML-KEM\\\midrule
+2 & (2,2) & 2663 & 136.2 & 136.2 & 136.2 & $-0.4$\\
+2 & (2,1) & 2293 & 138.0 & 133.1 & 133.1 & $-3.5$\\
+2 & (3,1) & 3301 & 139.8 & 131.6 & 131.6 & $-5.0$\\
+2 & (3,2) & 3631 & 138.4 & 136.0 & 136.0 & $-0.6$\\\midrule
+3 & (2,2) & 3329 & 196.4 & 196.4 & 196.4 & $0.0$\\
+3 & (2,1) & 2789 & 200.9 & 192.4 & 192.4 & $-4.0$\\\midrule
+4 & (2,2) & 3643 & 259.2 & 259.2 & 259.2 & $-3.1$\\
+4 & (2,1) & 3167 & 263.5 & 253.4 & 253.4 & $-8.9$\\\bottomrule
+\end{tabular}
+\caption{Symmetric and asymmetric noise; dual-hybrid cost ($\log_2$ operations) of the key- and message-recovery instances, lattice-estimator.}\label{tab:asym}
+\end{table}
+Lowering $\eta_2$ strengthens key recovery but weakens message recovery by more, so the message instance, which has the smaller error, becomes the binding one: no asymmetric candidate beats the symmetric choice $\eta_1=\eta_2=2$. The closest, $(3,2)$ for $k=2$, is $0.6$ bits below ML-KEM-512 and needs a larger modulus. The failure bound of the asymmetric candidates was evaluated only in float64 and not certified, since they are not used. The uSVP model used for the scan reproduces the estimator for symmetric noise but not for asymmetric noise (for instance $395$ against $430$ for the message instance of ML-KEM-512), so it cannot rank asymmetric candidates.
 
 \section{Arithmetic}\label{sec:arith}
 By Section~\ref{sec:ring}, multiplication in $\Rq$ is a length-$257$ cyclic convolution followed by a correction (the folding rule), which we verified against the explicit reduction modulo $\Phi_{257}$. Schoolbook multiplication costs $256^2=65{,}536$ coefficient products per ring multiplication; Karatsuba needs $3^8=6{,}561$ products on $256$ coefficients. $\mathsf{KeyGen}$ needs $k^2$ ring products for $As$ and $\mathsf{Enc}$ needs $k^2+k+k$ more.
 
-\paragraph{No NTT modulo $q$.} A transform modulo $q$ covering the linear convolution needs $512\mid q-1$, which fails for all three moduli: $2530=2\cdot5\cdot11\cdot23$, $3328=2^8\cdot13$ and $3556=2^2\cdot7\cdot127$.
+\paragraph{No NTT modulo $q$.} A transform modulo $q$ covering the linear convolution needs $512\mid q-1$, which fails for all three moduli: $2662=2\cdot11^3$, $3328=2^8\cdot13$ and $3642=2\cdot3\cdot607$.
 
-\paragraph{NTT over an auxiliary prime.} Every product in the scheme has one small operand ($s$, $r$ or $e_1$, with coefficients in $[-2,2]$). The integer coefficients of such a product are bounded by $256\cdot\lfloor q/2\rfloor\cdot2\le910{,}336$ for $q\le3557$ (centered representatives). Hence the product can be computed exactly with a $512$-point NTT over any prime $P\equiv1\pmod{512}$ with $P>2\cdot910{,}336$: lift the result to centered integers, fold as above and reduce modulo $q$. We verified this against the explicit reduction for all three moduli with $P=469762049=7\cdot2^{26}+1$. By butterfly count, one $512$-point transform has $9\cdot256=2304$ butterflies, against $7\cdot128=896$ for the incomplete $256$-point transform of ML-KEM, i.e.\ about $2.6$ times more, and the arithmetic is wider ($29$-bit instead of $12$-bit). In a matrix-vector product the transforms of the small vector are computed once and the inverse transforms are shared. A modulus with a native NTT does not help: for $q=12289$ ($512\mid q-1$, $\mathrm{ord}_{257}(q)=256$) and $k=2$, reaching $\beta_{\mathrm{uSVP}}\ge398$ (the level of CLH-MAX-512) requires $\eta=11$ ($\beta_{\mathrm{uSVP}}=403$ in our calibrated model), and the Chernoff bound then gives $\delta\approx2^{-98}$ (script \texttt{compression\_\allowbreak dfp.py}): the larger noise needed for the same security destroys correctness. We did not benchmark an implementation and make no performance claim; the reference implementation of Appendix~\ref{app:script} is written for clarity, not speed, and is not constant-time.
+\paragraph{NTT over an auxiliary prime.} Every product in the scheme has one small operand ($s$, $r$ or $e_1$, with coefficients in $[-2,2]$). The integer coefficients of such a product are bounded by $256\cdot\lfloor q/2\rfloor\cdot2\le932{,}352$ for $q\le3643$ (centered representatives). Hence the product can be computed exactly with a $512$-point NTT over any prime $P\equiv1\pmod{512}$ with $P>2\cdot932{,}352$: lift the result to centered integers, fold as above and reduce modulo $q$. We verified this against the explicit reduction for all three moduli with $P=469762049=7\cdot2^{26}+1$. By butterfly count, one $512$-point transform has $9\cdot256=2304$ butterflies, against $7\cdot128=896$ for the incomplete $256$-point transform of ML-KEM, i.e.\ about $2.6$ times more, and the arithmetic is wider ($29$-bit instead of $12$-bit). In a matrix-vector product the transforms of the small vector are computed once and the inverse transforms are shared. A modulus with a native NTT does not help: for $q=12289$ ($512\mid q-1$, $\mathrm{ord}_{257}(q)=256$) and $k=2$, reaching $\beta_{\mathrm{uSVP}}\ge398$ (the level of CLH-MAX-512) requires $\eta=11$ ($\beta_{\mathrm{uSVP}}=403$ in our calibrated model), and the Chernoff bound then gives $\delta\approx2^{-98}$ (script \texttt{compression\_\allowbreak dfp.py}): the larger noise needed for the same security destroys correctness. We did not benchmark an implementation and make no performance claim; the reference implementation of Appendix~\ref{app:script} is written for clarity, not speed, and is not constant-time.
 
 \section{Comparison with ML-KEM}
 \begin{table}[h]\centering\small
 \begin{tabular}{p{3.4cm}p{5.8cm}p{5.2cm}}\toprule
  & CLH-MAX (this work) & ML-KEM (FIPS 203)\\\midrule
-Ring & $\Z_q[X]/\Phi_{257}$, $q\in\{2531,3329,3557\}$, field $\F_{q^{256}}$ & $\Z_{3329}[X]/(X^{256}+1)$, 128 quadratic factors\\
+Ring & $\Z_q[X]/\Phi_{257}$, $q\in\{2663,3329,3643\}$, field $\F_{q^{256}}$ & $\Z_{3329}[X]/(X^{256}+1)$, 128 quadratic factors\\
 Fast multiplication & no NTT modulo $q$; exact NTT over an auxiliary prime (not benchmarked) & incomplete 7-layer NTT modulo $q$\\
 Noise & $\psi_2$ throughout & $\psi_3$ in the key for ML-KEM-512\\
-Generic MLWE estimate (key and message recovery) & Table~\ref{tab:est}: $+0.2$ bit ($k=2$, vs.\ weakest ML-KEM-512 instance), identical ($k=3$), $-1.9$ bits ($k=4$) & same estimator call\\
+Generic MLWE estimate (key and message recovery) & Table~\ref{tab:est}: $-0.4$ bits ($k=2$, vs.\ weakest ML-KEM-512 instance), identical ($k=3$), $-3.1$ bits ($k=4$) & same estimator call\\
 Ciphertext size ($k=2,3,4$) & 1152, 1536, 1920 B (uncompressed; compression breaks $\delta$) & 768, 1088, 1568 B\\
 Worst-case motivation & LPR13, outside concrete regime & same\\
 Standardisation / analysis & none (research proposal) & NIST standard, extensive analysis\\
-$\delta$ & $\le2^{-133}$ for all three sets (heuristic, Table~\ref{tab:dfp}) & see FIPS 203\\\bottomrule
+$\delta$ & certified $\le2^{-131}$ for all three sets (Table~\ref{tab:cert}); heuristic $\le2^{-140}$ & see FIPS 203\\\bottomrule
 \end{tabular}
 \caption{Qualitative comparison; no security ranking is claimed.}
 \end{table}
@@ -256,15 +332,16 @@ $\delta$ & $\le2^{-133}$ for all three sets (heuristic, Table~\ref{tab:dfp}) & s
 \section{Artifact availability}\label{sec:artifact}
 The source files of this version (\LaTeX{} source, the Lean~4 development, the scripts of Appendix~\ref{app:script}, a reference implementation and the raw estimator output) are archived on Zenodo:
 \begin{itemize}[nosep]
-\item version 2.0.2 (this paper): \url{https://doi.org/10.5281/zenodo.23705527}
+\item version 2.1.1 (this paper): \url{https://doi.org/10.5281/zenodo.24545562} % <-- replace with the reserved DOI of version 2.1.1
+\item version 2.1.0: \url{https://doi.org/10.5281/zenodo.24167384}
 \item all versions (always resolves to the latest): \url{https://doi.org/10.5281/zenodo.22883946}
 \end{itemize}
-Earlier Zenodo versions (v1 to 1.6) contain the previous version of this work, whose claims are withdrawn; version 2.0.0 used the modulus $q=3329$ for all module ranks. See the file \texttt{ERRATA.md} in the repository.
+Earlier Zenodo versions contain earlier versions of this work: versions up to 1.6 contain claims that are withdrawn, and versions 2.0.0 to 2.0.2 use moduli that do not satisfy the rigorous failure bound of Theorem~\ref{thm:chernoff}. Version 2.1.1 differs from version 2.1.0 only by the correction of two numerical values in Section~\ref{sec:arith} and of a typographical error in the open problems; neither affects any result. See the file \texttt{ERRATA.md} in the repository.
 
 The files \texttt{ClhMaxSecurity.lean} (one ring component, $k=1$) and \texttt{ClhMaxModule.lean} (arbitrary module rank $k$) compile against Mathlib v4.35.0 and formalise the game-hopping inequality underlying Theorem~\ref{thm:cpa}: the left-or-right IND-CPA advantage is bounded by the sum of the advantages of four explicit distinguishers, two against (Module-)LWE with $k$ samples and two against (Module-)LWE with $k+1$ samples. The bit-guessing form of Theorem~\ref{thm:cpa} follows by the standard argument, which is not formalised. Both files use no hardness axiom and no \texttt{sorry}; \texttt{\#print axioms} reports only \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}. Neither formalises the hardness of (M)LWE, running times, or the Fujisaki--Okamoto transform. The reference implementation \texttt{scripts/clh\_max\_ref.py} (PKE and FO-based KEM with a self-test, not constant-time, not for production use) and the Monte Carlo script \texttt{scripts/validate\_dfp.py} are also included.
 
 \section{Open problems}
-(i) A rigorous bound on $\delta$ (the simulation of Section~\ref{sec:dfp} supports the independence heuristic only down to probabilities of about $10^{-5}$) and a finer exploration of compression settings (the ML-KEM settings we tested break $\delta$, so our ciphertexts are $22$--$50\%$ larger than ML-KEM's). (ii) Narrowing the residual gap of about two bits at $k=4$, e.g.\ with other $(\eta,q)$ or with different noise for secret and error. (iii) An optimised, constant-time implementation and benchmarks (e.g.\ with an NTT over an auxiliary prime). (iv) A complete ring-specific cryptanalysis: Section~\ref{sec:ringsec} only checks the hypotheses of known attacks; in particular, whether an adaptation of the dual-RLWE narrow-error attack of \cite{CLS17} to the non-dual discrete setting exists, and whether the order-$256$ Galois action of $\Rq$ gives any algebraic leverage against MLWE. (v) A machine-checked proof of the Fujisaki--Okamoto transform (IND-CCA2) and of the statements that involve the hardness assumption; the Lean files cover only the IND-CPA game-hopping inequality.
+(i) Tighter rigorous bounds on $\delta$ (the Chernoff bound of Section~\ref{sec:dfp} is $9$--$14$ bits weaker than the heuristic estimate, so a sharper method would allow smaller moduli) and a finer exploration of compression settings (the ML-KEM settings we tested break $\delta$, so our ciphertexts are $22$--$50\%$ larger than ML-KEM's). (ii) Narrowing the residual gap of about three bits at $k=4$: asymmetric noise does not help (Section~\ref{sec:params}); other noise distributions are untested, e.g.\ with other $(\eta,q)$ or with different noise for secret and error. (iii) An optimised, constant-time implementation and benchmarks (e.g.\ with an NTT over an auxiliary prime). (iv) A complete ring-specific cryptanalysis: Section~\ref{sec:ringsec} only checks the hypotheses of known attacks; in particular, whether an adaptation of the dual-RLWE narrow-error attack of \cite{CLS17} to the non-dual discrete setting exists, and whether the order-$256$ Galois action of $\Rq$ gives any algebraic leverage against MLWE. (v) A machine-checked proof of the Fujisaki--Okamoto transform (IND-CCA2) and of the statements that involve the hardness assumption; the Lean files cover only the IND-CPA game-hopping inequality.
 
 \appendix
 \section{Proof of Lemma~\ref{lem:count}}\label{app:count}
@@ -287,7 +364,7 @@ B2(B, w):                        # MLWE challenge: k+1 samples, secret r
 Real MLWE samples reproduce the corresponding game exactly; uniform samples reproduce the next game.
 
 \section{Reproducibility scripts}\label{app:script}
-\paragraph{Decryption failure probability} (exact convolution under the independence heuristic; $e,s,r\leftarrow\psi_{\eta_1}$, $e_1,e_2\leftarrow\psi_{\eta_2}$; threshold $\lfloor q/4\rfloor$).
+\paragraph{Decryption failure probability} (exact convolution under the independence heuristic; $e,s,r\leftarrow\psi_{\eta_1}$, $e_1,e_2\leftarrow\psi_{\eta_2}$; threshold $t_q$ of Lemma~\ref{lem:dec}).
 \begin{verbatim}
 import numpy as np
 from math import log2, comb
@@ -309,7 +386,7 @@ def conv_pow(p, off, m):
         if m: base = np.convolve(base, base); boff *= 2
     return res, roff
 def delta(k, eta1, eta2, q):
-    thr = q // 4
+    thr = q // 4 if q % 4 == 1 else (q + 1) // 4      # t_q of Lemma 1
     pa, oa = prod_pmf(eta1, eta1); pb, ob = prod_pmf(eta1, eta2)
     d1, o1 = conv_pow(pa, oa, k*511); d2, o2 = conv_pow(pb, ob, k*511)
     d, o = np.convolve(d1, d2), o1 + o2
@@ -317,7 +394,7 @@ def delta(k, eta1, eta2, q):
     idx = np.arange(len(d)) - o
     t = d[np.abs(idx) >= thr].sum()
     return log2(t), log2(t) + 8           # per coefficient, union over 256
-for k, e1, e2, q in [(2,2,2,2531), (3,2,2,3329), (4,2,2,3557), (4,2,2,3329)]:
+for k, e1, e2, q in [(2,2,2,2663), (3,2,2,3329), (4,2,2,3643), (4,2,2,3329)]:
     print(k, e1, e2, q, delta(k, e1, e2, q))
 \end{verbatim}
 \paragraph{lattice-estimator runs} (same call for all rows; key recovery has $m=n$, message recovery $m=256(k+1)$).
@@ -326,8 +403,8 @@ from estimator import *
 CBD = ND.CenteredBinomial
 # name, k, q, eta_secret, eta_error
 # (ML-KEM-512 is handled separately below: key psi_3/psi_3, message psi_3/psi_2)
-sets = [("CLH-512", 2, 2531, 2, 2), ("CLH-768", 3, 3329, 2, 2),
-        ("CLH-1024", 4, 3557, 2, 2), ("ML-KEM-768", 3, 3329, 2, 2),
+sets = [("CLH-512", 2, 2663, 2, 2), ("CLH-768", 3, 3329, 2, 2),
+        ("CLH-1024", 4, 3643, 2, 2), ("ML-KEM-768", 3, 3329, 2, 2),
         ("ML-KEM-1024", 4, 3329, 2, 2)]
 for name, k, q, es, ee in sets:
     for kind, m in (("key", 256*k), ("message", 256*(k+1))):
@@ -344,6 +421,9 @@ for kind, es, ee, m in (("key", 3, 3, 512), ("message", 3, 2, 768)):
 \begin{itemize}[nosep]
 \item \texttt{scripts/validate\_dfp.py}: Monte Carlo validation of the failure model;
 \item \texttt{scripts/compression\_\allowbreak dfp.py}: compression and native-NTT-modulus computations;
+\item \texttt{scripts/rigorous\_dfp.py} and \texttt{scripts/certified\_dfp.py}: the Chernoff bound of Theorem~\ref{thm:chernoff} in float64 and with interval arithmetic;
+\item \texttt{scripts/exact\_dfp\_check.py}: independent check of the certified bounds with exact rational arithmetic;
+\item \texttt{scripts/asym\_search.py} and \texttt{scripts/estimate\_batch.py}: scan and estimator runs for asymmetric noise;
 \item \texttt{scripts/clh\_max\_ref.py}: reference implementation (PKE, FO-based KEM, ring multiplication by folding and by an NTT over the auxiliary prime, self-test).
 \end{itemize}
 
@@ -357,7 +437,7 @@ for kind, es, ee, m in (("key", 3, 3, 512), ("message", 3, 2, 768)):
 \bibitem{EHL14} K.~Eisentr\"ager, S.~Hallgren, K.~Lauter. Weak instances of PLWE. SAC 2014, LNCS 8781, 2014.
 \bibitem{ELOS15} Y.~Elias, K.~Lauter, E.~Ozman, K.~Stange. Provably weak instances of Ring-LWE. CRYPTO 2015, LNCS 9215, 2015 (ePrint 2015/106).
 \bibitem{CLS17} H.~Chen, K.~Lauter, K.~Stange. Attacks on the search-RLWE problem with small errors. SIAM J.\ Appl.\ Algebra Geom., 2017 (ePrint 2015/971).
-\bibitem{HHK17} D.~Hofheinz, K.~H\"ovelmanns, E.~Kiltz. A modular analysis of the Fujisaki--Okamoto transformation. TCC 2017.
+\bibitem{HHK17} D.~Hofheinz, K.~H\"ovelmanns, E.~Kiltz. A modular analysis of the Fujisaki--Okamoto transformation. TCC 2017; revised version ePrint 2017/604 (November 2021).
 \bibitem{Round5} H.~Baan, S.~Bhattacharya, S.~Fluhrer, O.~Garcia-Morchon, T.~Laarhoven, R.~Rietman, M.-J.~O.~Saarinen, L.~Tolhuizen, Z.~Zhang. Round5: Compact and fast post-quantum public-key encryption. PQCrypto 2019 (ePrint 2019/090).
 \bibitem{LPR13} V.~Lyubashevsky, C.~Peikert, O.~Regev. On ideal lattices and learning with errors over rings. J.\ ACM 60(6), 2013.
 \bibitem{FIPS203} NIST. FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard. 2024.
