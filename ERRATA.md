@@ -1,3 +1,12 @@
+## Version 2.1.1 (2026-11-25) — DOI 10.5281/zenodo.24545562
+
+Corrections to version 2.1.0. **No result, table, parameter or claim changes.**
+
+1. **Section 9, "No NTT modulo q".** The factorisations of q−1 were stale values from the previous parameter family: 2530 = 2·5·11·23 is 2531−1, and 3556 = 2²·7·127 is 3557−1. Corrected to 2662 = 2·11³ (q = 2663), 3328 = 2⁸·13 (q = 3329) and 3642 = 2·3·607 (q = 3643). The conclusion is unchanged: 512 ∤ q−1 for all three moduli, so there is no NTT modulo q.
+2. **Section 12, open problem (ii).** A broken sentence ("untested.g. with other …") was fixed.
+3. **Section 11.** Added the DOI of version 2.1.1 and a sentence stating what changed.
+
+Other numerical statements in Sections 3 and 9 (multiplicative orders modulo 257, the count of 1142 moduli below 20000, 3329 mod 512 and ord_512(3329), primality of P = 469762049, the bound 932,352) were re-verified by direct computation.
 # CLH-MAX — Errata and changelog
 
 ## v1 → v2.0.0
